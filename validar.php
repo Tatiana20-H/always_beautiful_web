@@ -1,25 +1,32 @@
 <?php
 session_start();
+include("conexion.php");
 
 $correo = $_POST['correo'];
-$password = $_POST['password'];
+$contraseña = $_POST['contraseña'];
 
-// ADMIN
-if($correo == "admin@gmail.com" && $password == "123"){
-    
-    $_SESSION['usuario'] = $correo;
-    $_SESSION['rol'] = "admin";
+$sql = "SELECT * FROM usuarios WHERE correo='$correo' AND contraseña='$contraseña'";
+$resultado = mysqli_query($conexion, $sql);
 
-    header("Location: admin/admin.php");
+if ($resultado && mysqli_num_rows($resultado) > 0) {
+    $datos = mysqli_fetch_assoc($resultado);
+
+    $_SESSION['usuario'] = $datos['nombre'];
+    $_SESSION['correo'] = $datos['correo'];
+    $_SESSION['rol'] = $datos['rol'];
+
+    // 🔥 AQUÍ RESPETA TUS SUBPÁGINAS
+    if ($datos['rol'] == 'admin') {
+        header("Location: Administrador/index.php");
+    } else {
+        header("Location: usuario.php");
+    }
     exit();
-}
 
-// USUARIO NORMAL
-else {
-    $_SESSION['usuario'] = $correo;
-    $_SESSION['rol'] = "cliente";
-
-    header("Location: usuario/inicio.php");
-    exit();
+} else {
+    echo "<script>
+        alert('Datos incorrectos');
+        window.location='login.php';
+    </script>";
 }
 ?>
