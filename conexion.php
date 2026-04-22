@@ -1,12 +1,7 @@
 <?php
-$host = "localhost";
-$usuario = "root";
-$contrasena = "";
-$bd = "alwaysbeautiful";
+$conexion = new mysqli("localhost:3307", "root", "TU_CONTRASEÑA", "alwaysbeautiful");
 
-$conn = new mysqli($host, $usuario, $contrasena, $bd);
-
-if ($conn->connect_error) {
-    die("Error de conexión: " . $conn->connect_error);
+if ($conexion->connect_error) {
+    die("Error de conexión: " . $conexion->connect_error);
 }
 ?>

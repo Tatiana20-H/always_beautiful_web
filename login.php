@@ -3,31 +3,32 @@ session_start();
 include("conexion.php");
 
 $correo = $_POST['correo'];
-$contrasena = $_POST['contrasena'];
+$password = $_POST['password'];
 
-# 🔹 BUSCAR EN ADMIN
-$sql_admin = "SELECT * FROM Administrador 
-WHERE correo='$correo' AND contraseña='$contrasena'";
+$sql = "SELECT * FROM Usuario WHERE correo='$correo'";
+$resultado = $conexion->query($sql);
 
-$result_admin = $conexion->query($sql_admin);
+if ($resultado->num_rows > 0) {
+    $usuario = $resultado->fetch_assoc();
 
-if ($result_admin->num_rows > 0) {
-    $_SESSION['admin'] = $correo;
-    header("Location: admin/index.php");
-    exit();
+    // VALIDAR CONTRASEÑA
+    if ($password == $usuario['password']) {
+
+        $_SESSION['usuario'] = $usuario['nombre'];
+        $_SESSION['rol'] = $usuario['rol'];
+
+
+        if ($usuario['rol'] == 'admin') {
+            header("Location: admin.php");
+        } else {
+            header("Location: usuario.php");
+        }
+
+    } else {
+        echo "Contraseña incorrecta";
+    }
+
+} else {
+    echo "Usuario no existe";
 }
-
-# 🔹 BUSCAR EN CLIENTE
-$sql_cliente = "SELECT * FROM Cliente 
-WHERE correo='$correo' AND contraseña='$contrasena'";
-
-$result_cliente = $conexion->query($sql_cliente);
-
-if ($result_cliente->num_rows > 0) {
-    $_SESSION['cliente'] = $correo;
-    header("Location: index.php"); // tu página principal
-    exit();
-}
-
-echo "Correo o contraseña incorrectos";
 ?>
