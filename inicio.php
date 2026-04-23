@@ -29,22 +29,6 @@
 
 </section>
 
-<!-- CATEGORÍAS -->
-<section style="text-align: center; padding: 50px 20px;">
-    <h2>Nuestras Categorías</h2>
-    <p>Explora nuestros productos por categoría</p>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
-        <a href="Maquillaje.php" style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">💄 Maquillaje</a>
-        
-        <a href="Cabello.php" style="padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">✨ Cabello</a>
-        
-        <a href="piel.php" style="padding: 20px; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: 600; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🌿 Piel</a>
-        
-        <a href="Accesorios.php" style="padding: 20px; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; text-decoration: none; border-radius: 10px; font-weight: 600; transition: 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">👑 Accesorios</a>
-    </div>
-</section>
-
 <script>
 let imagenes = [
     "IMG/slide1.jpg",

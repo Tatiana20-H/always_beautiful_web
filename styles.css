@@ -311,7 +311,7 @@ body {
 .card h3::after {
     content: "";
     display: block;
-    width: 60%;
+    width: 70%;
     height: 4px;
     background: gray;
     margin: 8px auto;
@@ -325,15 +325,19 @@ body {
 
 /* BOTON */
 .card button {
-    background: #d9d9d9;
-    border: 2px solid gray;
-    padding: 10px 20px;
+    background: #525252;
+    border: 2px solid #525252;
+    padding: 8px 8px;
     border-radius: 30px;
     cursor: pointer;
+    display: inline-block;
+    margin: 15px 0 0 0;
+    font-size: 13px;
+    color: white;
 }
 
 .card button:hover {
-    background: #e6b3cc;
+    background: #555;
 }
 
 @media (max-width: 900px) {
@@ -392,7 +396,7 @@ body {
 .card h3::after {
     content: "";
     display: block;
-    width: 60%;
+    width: 70%;
     height: 4px;
     background: gray;
     margin: 8px auto;
@@ -406,15 +410,19 @@ body {
 
 /* BOTON */
 .card button {
-    background: #d9d9d9;
-    border: 2px solid gray;
-    padding: 10px 20px;
+    background: #6e6c6c;
+    border: 2px solid #525252;
+    padding: 8px 8px;
     border-radius: 30px;
     cursor: pointer;
+    display: inline-block;
+    margin: 15px 0 0 0;
+    font-size: 13px;
+    color: rgb(226, 215, 215);
 }
 
 .card button:hover {
-    background: #e6b3cc;
+    background: #555;
 }
 
 @media (max-width: 900px) {
@@ -473,7 +481,7 @@ body {
 .card h3::after {
     content: "";
     display: block;
-    width: 60%;
+    width: 70%;
     height: 4px;
     background: gray;
     margin: 8px auto;
@@ -487,15 +495,19 @@ body {
 
 /* BOTON */
 .card button {
-    background: #d9d9d9;
-    border: 2px solid gray;
-    padding: 10px 20px;
+    background: #525252;
+    border: 2px solid #525252;
+    padding: 4px 4px;
     border-radius: 30px;
     cursor: pointer;
+    display: inline-block;
+    margin: 10px 0 0 0;
+    font-size: 10px;
+    color: white;
 }
 
 .card button:hover {
-    background: #e6b3cc;
+    background: #555;
 }
 
 @media (max-width: 900px) {
@@ -554,7 +566,7 @@ body {
 .card h3::after {
     content: "";
     display: block;
-    width: 60%;
+    width: 70%;
     height: 4px;
     background: gray;
     margin: 8px auto;
@@ -568,17 +580,19 @@ body {
 
 /* BOTON */
 .card button {
-    background: #d9d9d9;
-    border: 2px solid gray;
-    padding: 10px 20px;
+    background: #525252;
+    border: 2px solid #525252;
+    padding: 8px 8px;
     border-radius: 30px;
     cursor: pointer;
-    justify-content: center;
+    display: inline-block;
+    margin: 15px 0 0 0;
+    font-size: 13px;
+    color: white;
 }
 
-
 .card button:hover {
-    background: #e6b3cc;
+    background: #555;
 }
 
 @media (max-width: 900px) {
@@ -598,8 +612,17 @@ body {
 }
 
 .carrito-container {
-    width: 80%;
-    margin: auto;
+    width: 60%;
+    margin: 40px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.titulo-carrito {
+    text-align: center;
+    color: #888888;
 }
 
 .item {
@@ -647,19 +670,23 @@ body {
     margin-top: 20px;
 }
 
+.contenedor-pagar {
+    text-align: center;
+    margin-top: 30px;
+}
+
 .btn-pagar {
     display: inline-block;
-    padding: 10px 25px;
-    background: #ff66a3;
+    padding: 12px 40px;
+    background: #525252;
     color: white;
     border-radius: 20px;
     text-decoration: none;
     font-size: 14px;
-    
 }
 
 .btn-pagar:hover{
-    background:#e0558f;
+    background: #6e6c6c;
 }
 
 .carrito{

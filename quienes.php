@@ -17,7 +17,7 @@ include("header.php");
 }
 
 .quienes-container h2{
-    color: #d63384;
+    color: #b8869a;
     font-size: 32px;
     margin-bottom: 20px;
 }

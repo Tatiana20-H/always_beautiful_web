@@ -22,23 +22,24 @@ $totalCompras = isset($_SESSION['historial']) ? count($_SESSION['historial']) : 
     width: 60%;
     margin: 40px auto;
     padding: 30px;
-    background: #fff;
+    background: #f5f5f5;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
     text-align: center;
 }
 
 .perfil-container h2{
-    color: #d63384;
+    color: #888888;
 }
 
 .dato{
     margin: 15px 0;
     font-size: 18px;
+    color: #d4a5b8;
 }
 
 .btn{
-    background: #d63384;
+    background: #525252;
     color: white;
     padding: 10px 20px;
     border: none;

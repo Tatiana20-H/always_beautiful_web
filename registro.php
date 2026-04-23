@@ -35,6 +35,12 @@ session_start();
             <input type="email" name="correo" placeholder="Correo" required>
             <input type="password" name="password" placeholder="Contraseña" required>
             <input type="password" name="password_confirm" placeholder="Confirmar contraseña" required>
+            
+            <select name="rol" required>
+                <option value="">Tipo de usuario</option>
+                <option value="admin">Administrador</option>
+                <option value="usuario">Usuario</option>
+            </select>
 
             <button type="submit">Crear cuenta</button>
 
