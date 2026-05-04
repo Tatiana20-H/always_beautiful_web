@@ -1,0 +1,81 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "compile-java",
+            "type": "shell",
+            "command": "javac",
+            "args": [
+                "-cp",
+                "lib/mysql-connector-j-9.7.0.jar;lib/servlet-api.jar",
+                "-d",
+                "out/classes",
+                "conexion/ConexionBD.java",
+                "modelo/Usuario.java",
+                "modelo/Producto.java",
+                "dao/UsuarioDAO.java",
+                "dao/ProductoDAO.java",
+                "Administrador/servlet/LoginServlet.java",
+                "Administrador/servlet/ProductoServlet.java",
+                "Administrador/servlet/CarritoServlet.java"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": "$javac"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "Remove-Item",
+            "args": [
+                "-Recurse",
+                "-Force",
+                "out"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "deploy-to-webapp",
+            "type": "shell",
+            "command": "Copy-Item",
+            "args": [
+                "-Path",
+                "out/classes/*",
+                "-Destination",
+                "WEB-INF/classes/",
+                "-Recurse",
+                "-Force"
+            ],
+        {
+            "label": "deploy-to-tomcat",
+            "type": "shell",
+            "command": "Copy-Item",
+            "args": [
+                "-Path",
+                ".",
+                "-Destination",
+                "C:/Users/USUARIO/Pictures/apache-tomcat-9.0.117-windows-x64/apache-tomcat-9.0.117/webapps/always_beautiful_web",
+                "-Recurse",
+                "-Force",
+                "-Exclude",
+                ".git",
+                ".vscode",
+                "out",
+                "lib",
+                "conexion",
+                "dao",
+                "modelo",
+                "Main",
+                "Conexión"
+            ],
+            "dependsOn": "deploy-to-webapp",
+            "group": "build"
+        }

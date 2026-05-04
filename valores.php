@@ -17,7 +17,7 @@ include("header.php");
 }
 
 .valores-container h2{
-    color: #d63384;
+    color: #b8869a;
     font-size: 32px;
     margin-bottom: 30px;
 }
@@ -36,7 +36,7 @@ include("header.php");
 }
 
 .valor h3{
-    color: #d63384;
+    color: #b8869a;
     margin-bottom: 10px;
 }
 

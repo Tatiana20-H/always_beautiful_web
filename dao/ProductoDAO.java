@@ -1,85 +1,58 @@
 package dao;
 
 import modelo.Producto;
+import conexion.ConexionBD;
+
 import java.sql.*;
 import java.util.*;
 
 public class ProductoDAO {
 
+    // INSERTAR
     public void insertar(Producto p) {
         String sql = "INSERT INTO productos(nombre, precio, stock) VALUES(?,?,?)";
 
-        try (Connection con = ConexionBD.conectar();
+        try (Connection con = ConexionBD.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, p.getNombre());
-            ps.setInt(2, p.getPrecio());
+            ps.setDouble(2, p.getPrecio());
             ps.setInt(3, p.getStock());
-            ps.executeUpdate();
 
-            System.out.println("Producto agregado");
+            int filas = ps.executeUpdate();
 
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+            if (filas > 0) {
+                System.out.println("Producto agregado: " + p.getNombre());
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al insertar: " + e.getMessage());
         }
     }
 
+    // LISTAR
     public List<Producto> listar() {
         List<Producto> lista = new ArrayList<>();
         String sql = "SELECT * FROM productos";
 
-        try (Connection con = ConexionBD.conectar();
+        try (Connection con = ConexionBD.getConnection();
              Statement st = con.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
-                lista.add(new Producto(
+                Producto p = new Producto(
                         rs.getInt("id"),
                         rs.getString("nombre"),
-                        rs.getInt("precio"),
+                        rs.getDouble("precio"),
                         rs.getInt("stock")
-                ));
+                );
+                lista.add(p);
             }
 
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Error al listar: " + e.getMessage());
         }
 
         return lista;
-    }
-
-    public void actualizar(Producto p) {
-        String sql = "UPDATE productos SET nombre=?, precio=?, stock=? WHERE id=?";
-
-        try (Connection con = ConexionBD.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, p.getNombre());
-            ps.setInt(2, p.getPrecio());
-            ps.setInt(3, p.getStock());
-            ps.setInt(4, p.getId());
-            ps.executeUpdate();
-
-            System.out.println("Producto actualizado");
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    public void eliminar(int id) {
-        String sql = "DELETE FROM productos WHERE id=?";
-
-        try (Connection con = ConexionBD.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, id);
-            ps.executeUpdate();
-
-            System.out.println("Producto eliminado");
-
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
     }
 }

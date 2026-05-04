@@ -14,7 +14,7 @@ include("header.php");
 
 .articulos-container h2{
     text-align: center;
-    color: #d63384;
+    color: #b8869a;
     font-size: 32px;
     margin-bottom: 30px;
 }
@@ -48,7 +48,7 @@ include("header.php");
 }
 
 .articulo-card h3{
-    color: #d63384;
+    color: #b8869a;
     margin-bottom: 10px;
 }
 
@@ -60,7 +60,7 @@ include("header.php");
 .articulo-card a{
     display: inline-block;
     margin-top: 10px;
-    background: #d63384;
+    background: #525252;
     color: white;
     padding: 8px 15px;
     border-radius: 10px;

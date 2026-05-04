@@ -16,7 +16,7 @@ include("header.php");
 }
 
 .articulo-container h2{
-    color: #d63384;
+    color: #b8869a;
     margin-bottom: 20px;
 }
 
@@ -40,7 +40,7 @@ include("header.php");
 }
 
 .pasos h3{
-    color: #d63384;
+    color: #b8869a;
     margin-bottom: 10px;
 }
 </style>

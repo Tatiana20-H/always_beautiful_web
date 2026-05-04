@@ -15,9 +15,21 @@
     </div>
 
     <div class="right">
-        <form action="inicio.php" method="POST">
+        <?php
+        if (isset($_SESSION['errores_login'])) {
+            echo '<div style="background: #ff6b6b; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">';
+            foreach ($_SESSION['errores_login'] as $error) {
+                echo '<p>❌ ' . htmlspecialchars($error) . '</p>';
+            }
+            echo '</div>';
+            unset($_SESSION['errores_login']);
+        }
+        ?>
+        
+        <form action="login.php" method="POST">
             <h2>Iniciar Sesión</h2>
 
+            <input type="text" name="nombre" placeholder="Nombre" required>
             <input type="email" name="correo" placeholder="Correo" required>
             <input type="password" name="password" placeholder="Contraseña" required>
 

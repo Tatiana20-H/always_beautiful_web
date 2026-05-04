@@ -1,11 +1,7 @@
 <?php
 session_start();
 include("conexion.php");
-<?php
-$host = "localhost";
-$usuario = "root";
-$contrasena = "";
-$bd = "AlwaysBeautifulDB";
+
 // Validar que los datos hayan sido enviados
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: registro.php");
@@ -17,6 +13,7 @@ $nombre = trim($_POST['nombre'] ?? '');
 $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
 $password_confirm = $_POST['password_confirm'] ?? '';
+$rol = trim($_POST['rol'] ?? 'usuario');
 
 // Validaciones
 $errores = [];
@@ -39,6 +36,10 @@ if ($password !== $password_confirm) {
 
 if (strlen($password) < 6) {
     $errores[] = "La contraseña debe tener al menos 6 caracteres";
+}
+
+if (empty($rol) || !in_array($rol, ['admin', 'usuario'])) {
+    $errores[] = "Tipo de usuario inválido";
 }
 
 // Si hay errores, mostrarlos
@@ -68,21 +69,23 @@ $password_hash = password_hash($password, PASSWORD_BCRYPT);
 
 // Insertar nuevo usuario
 $sql_insert = "INSERT INTO usuarios (nombre, correo, contrasena, rol) 
-               VALUES (?, ?, ?, 'usuario')";
+               VALUES (?, ?, ?, ?)";
 $stmt = $conexion->prepare($sql_insert);
-$stmt->bind_param("sss", $nombre, $correo, $password_hash);
+$stmt->bind_param("ssss", $nombre, $correo, $password_hash, $rol);
 
 if ($stmt->execute()) {
     $usuario_id = $conexion->insert_id;
     
-    // Registrar en historial de actividades
+    // Registrar en historial de actividades (opcional - no bloquea si falla)
     $ip_address = $_SERVER['REMOTE_ADDR'];
     $sql_historial = "INSERT INTO historial_actividades (usuario_id, accion, descripcion, ip_address) 
                       VALUES (?, 'REGISTRO', 'Usuario registrado exitosamente', ?)";
     $stmt_historial = $conexion->prepare($sql_historial);
-    $stmt_historial->bind_param("is", $usuario_id, $ip_address);
-    $stmt_historial->execute();
-    $stmt_historial->close();
+    if ($stmt_historial) {
+        $stmt_historial->bind_param("is", $usuario_id, $ip_address);
+        $stmt_historial->execute();
+        $stmt_historial->close();
+    }
     
     // Guardar sesión del usuario
     $_SESSION['usuario_id'] = $usuario_id;

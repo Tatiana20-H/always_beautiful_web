@@ -17,7 +17,7 @@ include("header.php");
 }
 
 .ubicacion-container h2{
-    color: #d63384;
+    color: #b8869a;
     margin-bottom: 20px;
 }
 
