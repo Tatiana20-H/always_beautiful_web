@@ -33,11 +33,20 @@ if (empty($rol) || !in_array($rol, ['admin', 'usuario'])) {
     $errores[] = "Tipo de usuario inválido";
 }
 
-// Si hay errores, redirigir con mensajes
-if (!empty($errores)) {
-    $_SESSION['errores_login'] = $errores;
+function redirectWithLoginErrors(array $errors, array $oldData = []) {
+    $_SESSION['errores_login'] = $errors;
+    $_SESSION['old_login'] = $oldData;
     header("Location: index.php");
     exit();
+}
+
+// Si hay errores, redirigir con mensajes
+if (!empty($errores)) {
+    redirectWithLoginErrors($errores, [
+        'nombre' => $nombre,
+        'correo' => $correo,
+        'rol' => $rol,
+    ]);
 }
 
 // Consultar usuario con prepared statement
@@ -45,9 +54,11 @@ $sql = "SELECT id, nombre, correo, contrasena, rol FROM usuarios WHERE correo = 
 $stmt = $conexion->prepare($sql);
 
 if (!$stmt) {
-    $_SESSION['errores_login'] = ["Error en la consulta: " . $conexion->error];
-    header("Location: index.php");
-    exit();
+    redirectWithLoginErrors(["Error en la consulta: " . $conexion->error], [
+        'nombre' => $nombre,
+        'correo' => $correo,
+        'rol' => $rol,
+    ]);
 }
 
 $stmt->bind_param("ss", $correo, $rol);
@@ -78,7 +89,7 @@ if ($resultado->num_rows > 0) {
         }
         
         // Redirigir según rol
-        if ($usuario['rol'] == 'admin') {
+        if ($usuario['rol'] == "admin") {
             header("Location: Administrador/index.php");
         } else {
             header("Location: inicio.php");
@@ -86,15 +97,19 @@ if ($resultado->num_rows > 0) {
         exit();
         
     } else {
-        $_SESSION['errores_login'] = ["Contraseña incorrecta"];
-        header("Location: index.php");
-        exit();
+        redirectWithLoginErrors(["Contraseña incorrecta"], [
+            'nombre' => $nombre,
+            'correo' => $correo,
+            'rol' => $rol,
+        ]);
     }
     
 } else {
-    $_SESSION['errores_login'] = ["Usuario no encontrado con esas credenciales"];
-    header("Location: index.php");
-    exit();
+    redirectWithLoginErrors(["Usuario no encontrado con esas credenciales"], [
+        'nombre' => $nombre,
+        'correo' => $correo,
+        'rol' => $rol,
+    ]);
 }
 
 $stmt->close();

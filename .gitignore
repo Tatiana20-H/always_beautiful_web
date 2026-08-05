@@ -1,0 +1,12 @@
+# Ignore generated and build artifact files
+out/
+target/
+api-auth/target/
+*.class
+always-beautiful/
+# IDE and system files
+.idea/
+*.iml
+*.log
+.DS_Store
+Thumbs.db

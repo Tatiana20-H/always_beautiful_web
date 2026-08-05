@@ -1,0 +1,42 @@
+# ==========================================
+#   Always Beautiful - Configuración API
+# ==========================================
+
+# Base de datos MySQL
+spring.datasource.url=jdbc:mysql://localhost:3306/AlwaysBeautifulDB?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# JPA / Hibernate
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+# Servidor
+server.port=8080
+server.servlet.context-path=/api
+
+# Configuración JWT
+app.jwt.secret=AlwaysBeautifulSecretKey2024SuperSecureJWTTokenKey
+app.jwt.expiration=86400000
+
+# OpenAPI / Swagger
+springdoc.api-docs.path=/v3/api-docs
+springdoc.swagger-ui.path=/swagger-ui.html
+springdoc.swagger-ui.enabled=true
+springdoc.swagger-ui.operationsSorter=method
+springdoc.swagger-ui.tagsSorter=alpha
+
+# Manejo de errores
+server.error.include-message=always
+server.error.include-binding-errors=always
+
+# Subida de archivos (imágenes de productos)
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=10MB
+
+# Logging
+logging.level.com.beauty=DEBUG
+logging.level.org.springframework.security=INFO

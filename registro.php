@@ -12,67 +12,44 @@ session_start();
 
 <div class="login-container">
 
-    <div class="left">
-        
-    </div>
+    <div class="left"></div>
 
     <div class="right">
+
         <?php
         if (isset($_SESSION['errores'])) {
-            echo '<div style="background: #ff6b6b; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">';
+            echo '<div class="error-box">';
+
             foreach ($_SESSION['errores'] as $error) {
                 echo '<p>❌ ' . htmlspecialchars($error) . '</p>';
             }
+
             echo '</div>';
             unset($_SESSION['errores']);
         }
         ?>
-        
-        <form action="guardar-usuario.php" method="POST">
+
+        <div class="form-wrapper">
             <h2>Registrarse</h2>
+            <form action="guardar-usuario.php" method="POST">
 
-            <input type="text" name="nombre" placeholder="Nombre completo" required>
-            <input type="email" name="correo" placeholder="Correo" required>
-            <input type="password" name="password" placeholder="Contraseña" required>
-            <input type="password" name="password_confirm" placeholder="Confirmar contraseña" required>
-            
-            <select name="rol" required>
-                <option value="">Tipo de usuario</option>
-                <option value="admin">Administrador</option>
-                <option value="usuario">Usuario</option>
-            </select>
+                <input type="text" name="nombre" placeholder="Nombre completo" required>
 
-            <button type="submit">Crear cuenta</button>
+                <input type="email" name="correo" placeholder="Correo" required>
 
-            <p>¿Ya tienes cuenta? <a href="login.php">Iniciar sesión aquí</a></p>
-        </form>
+                <input type="password" name="password" placeholder="Contraseña" required>
+
+                <input type="password" name="password_confirm" placeholder="Confirmar contraseña" required>
+
+                <button type="submit">Crear cuenta</button>
+
+                <p>¿Ya tienes cuenta? <a href="index.php">Iniciar sesión aquí</a></p>
+
+            </form>
+        </div>
+
     </div>
 
-</div>
-
-</body>
-</html>
-        echo '<div class="errores"><ul>';
-        foreach ($_SESSION['errores'] as $error) {
-            echo '<li>❌ ' . htmlspecialchars($error) . '</li>';
-        }
-        echo '</ul></div>';
-        unset($_SESSION['errores']);
-    }
-    ?>
-    
-    <form action="guardar-usuario.php" method="POST">
-        <h2>🌸 Registrarse</h2>
-
-        <input type="text" name="nombre" placeholder="Tu nombre" required>
-        <input type="email" name="correo" placeholder="Correo electrónico" required>
-        <input type="password" name="password" placeholder="Contraseña" required>
-        <input type="password" name="password_confirm" placeholder="Confirmar contraseña" required>
-
-        <button type="submit">✨ Crear cuenta</button>
-
-        <p>¿Ya tienes cuenta? <a href="login.php">Iniciar sesión aquí</a></p>
-    </form>
 </div>
 
 </body>

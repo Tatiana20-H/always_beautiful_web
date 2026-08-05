@@ -13,7 +13,7 @@ $nombre = trim($_POST['nombre'] ?? '');
 $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
 $password_confirm = $_POST['password_confirm'] ?? '';
-$rol = trim($_POST['rol'] ?? 'usuario');
+$rol = 'usuario';
 
 // Validaciones
 $errores = [];
@@ -36,10 +36,6 @@ if ($password !== $password_confirm) {
 
 if (strlen($password) < 6) {
     $errores[] = "La contraseña debe tener al menos 6 caracteres";
-}
-
-if (empty($rol) || !in_array($rol, ['admin', 'usuario'])) {
-    $errores[] = "Tipo de usuario inválido";
 }
 
 // Si hay errores, mostrarlos
