@@ -70,11 +70,40 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+}
+
+.form-wrapper {
+    width: 300px;
+    text-align: center;
+    padding-top: 20px;
+    position: relative;
 }
 
 form {
-    width: 300px;
+    width: 100%;
     text-align: center;
+}
+
+.error-box {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    width: calc(100% - 40px);
+    max-width: 300px;
+    background: #ff6b6b;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-sizing: border-box;
+    z-index: 2;
+}
+
+.error-box p {
+    margin: 0;
+    font-weight: 600;
 }
 
 h2 {

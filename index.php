@@ -16,33 +16,37 @@
 
     <div class="right">
         <?php
-        if (isset($_SESSION['errores_login'])) {
-            echo '<div style="background: #ff6b6b; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">';
-            foreach ($_SESSION['errores_login'] as $error) {
-                echo '<p>❌ ' . htmlspecialchars($error) . '</p>';
-            }
-            echo '</div>';
-            unset($_SESSION['errores_login']);
-        }
+        $old_login = $_SESSION['old_login'] ?? ['nombre' => '', 'correo' => '', 'rol' => ''];
         ?>
-        
-        <form action="login.php" method="POST">
+        <div class="form-wrapper">
+            <?php
+            if (isset($_SESSION['errores_login'])) {
+                echo '<div class="error-box">';
+                foreach ($_SESSION['errores_login'] as $error) {
+                    echo '<p>❌ ' . htmlspecialchars($error) . '</p>';
+                }
+                echo '</div>';
+                unset($_SESSION['errores_login']);
+            }
+            ?>
             <h2>Iniciar Sesión</h2>
+            <form action="login.php" method="POST">
 
-            <input type="text" name="nombre" placeholder="Nombre" required>
-            <input type="email" name="correo" placeholder="Correo" required>
+            <input type="text" name="nombre" placeholder="Nombre" required value="<?php echo htmlspecialchars($old_login['nombre']); ?>">
+            <input type="email" name="correo" placeholder="Correo" required value="<?php echo htmlspecialchars($old_login['correo']); ?>">
             <input type="password" name="password" placeholder="Contraseña" required>
 
             <select name="rol" required>
                 <option value="">Tipo de usuario</option>
-                <option value="admin">Administrador</option>
-                <option value="usuario">Usuario</option>
+                <option value="admin" <?php echo $old_login['rol'] === 'admin' ? 'selected' : ''; ?>>Administrador</option>
+                <option value="usuario" <?php echo $old_login['rol'] === 'usuario' ? 'selected' : ''; ?>>Usuario</option>
             </select>
 
             <button type="submit">Ingresar</button>
 
             <p>¿No tienes cuenta? <a href="registro.php">Registrarse</a></p>
         </form>
+        </div>
     </div>
 
 </div>

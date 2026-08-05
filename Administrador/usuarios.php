@@ -1,8 +1,9 @@
 <?php include("Seguridad.php"); ?>
 <?php include("../conexion.php"); ?>
-<?php include("header_admin.php"); ?>
+<?php include("header-admin.php"); ?>
 
-<h2>Usuarios Registrados</h2>
+<div style="padding:25px;">
+    <h2>Usuarios Registrados</h2>
 
 <table border="1">
 <tr>

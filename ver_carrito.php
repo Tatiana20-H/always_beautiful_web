@@ -36,7 +36,7 @@ foreach($_SESSION['carrito'] as $nombre => $producto):
             <a href="restar.php?producto=<?= urlencode($nombre) ?>" class="btn-cantidad">➖</a>
         </div>
 
-        <p class="precio">$<?= $precio * $cantidad ?></p>
+        <p class="precio">$<?= number_format($precio * $cantidad, 0, ',', '.') ?></p>
 
         <a href="eliminar.php?producto=<?= urlencode($nombre) ?>" class="eliminar">Eliminar</a>
     </div>
@@ -56,7 +56,7 @@ else:
 
 </div>
 
-<h2 class="total">Total: $<?= $total ?></h2>
+<h2 class="total">Total: $<?= number_format($total, 0, ',', '.') ?></h2>
 
 <div class="contenedor-pagar">
     <a href="pagar.php" class="btn-pagar">Pagar</a>

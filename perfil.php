@@ -84,7 +84,7 @@ $totalCompras = isset($_SESSION['historial']) ? count($_SESSION['historial']) : 
             <?php endforeach; ?>
 
             <br>
-            <strong>Total pagado:</strong> $<?= $compra['total'] ?>
+            <strong>Total pagado:</strong> $<?= number_format($compra['total'], 0, ',', '.') ?>
 
         </div>
 
