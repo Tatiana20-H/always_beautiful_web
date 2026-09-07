@@ -45,6 +45,44 @@ if (!@mysqli_select_db($conexion, $dbName)) {
 
 mysqli_set_charset($conexion, 'utf8mb4');
 
+require_once __DIR__ . '/datos_usuario.php';
+asegurarCamposUsuario($conexion);
+
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS reseñas_productos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    nombre_autor VARCHAR(100) NULL,
+    producto_nombre VARCHAR(150) NOT NULL,
+    estrellas TINYINT NOT NULL,
+    comentario TEXT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY reseña_usuario_producto (usuario_id, producto_nombre),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+mysqli_query($conexion, "ALTER TABLE reseñas_productos MODIFY usuario_id INT NULL");
+mysqli_query($conexion, "ALTER TABLE reseñas_productos ADD COLUMN nombre_autor VARCHAR(100) NULL");
+
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS votos_reseñas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reseña_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    voto ENUM('like', 'dislike') NOT NULL,
+    UNIQUE KEY voto_usuario_reseña (reseña_id, usuario_id),
+    FOREIGN KEY (reseña_id) REFERENCES reseñas_productos(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS reportes_reseñas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reseña_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    motivo VARCHAR(255) NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY reporte_usuario_reseña (reseña_id, usuario_id),
+    FOREIGN KEY (reseña_id) REFERENCES reseñas_productos(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 function ensureAdminUser($conexion) {
     $adminName = 'Admin';
     $adminEmail = 'AdminAlways@gmail.com';
@@ -71,7 +109,7 @@ function ensureAdminUser($conexion) {
             mysqli_stmt_fetch($stmt);
             mysqli_stmt_close($stmt);
 
-            if (!password_verify($adminPassword, $storedHash) || password_needs_rehash($storedHash, PASSWORD_BCRYPT)) {
+            if (!is_string($storedHash) || !password_verify($adminPassword, $storedHash) || password_needs_rehash($storedHash, PASSWORD_BCRYPT)) {
                 $sql_update = "UPDATE usuarios SET contrasena = ? WHERE id = ?";
                 if ($update = mysqli_prepare($conexion, $sql_update)) {
                     mysqli_stmt_bind_param($update, "si", $adminPasswordHash, $adminId);
@@ -82,6 +120,36 @@ function ensureAdminUser($conexion) {
         }
     }
 }
+
+// Crear tabla de mensajes de contacto
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS mensajes_contacto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    correo VARCHAR(100) NOT NULL,
+    asunto VARCHAR(200) NOT NULL,
+    mensaje TEXT NOT NULL,
+    estado ENUM('no_leido', 'leido', 'respondido') DEFAULT 'no_leido',
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_estado (estado),
+    INDEX idx_fecha (fecha_creacion),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+$columnaFoto = mysqli_query($conexion, "SHOW COLUMNS FROM mensajes_contacto LIKE 'foto_mensaje'");
+if ($columnaFoto && mysqli_num_rows($columnaFoto) === 0) {
+    mysqli_query($conexion, "ALTER TABLE mensajes_contacto ADD COLUMN foto_mensaje VARCHAR(255) NULL");
+}
+
+// Crear tabla de respuestas de mensajes
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS respuestas_mensajes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mensaje_id INT NOT NULL,
+    admin_id INT NOT NULL,
+    respuesta TEXT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (mensaje_id) REFERENCES mensajes_contacto(id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 ensureAdminUser($conexion);
 ?>

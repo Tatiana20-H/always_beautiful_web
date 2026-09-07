@@ -34,6 +34,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="historia-container">
 
     <img src="IMG/Historia.jpg" class="historia-img">

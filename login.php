@@ -1,6 +1,7 @@
 <?php
 session_start();
 include("conexion.php");
+$conexion = $GLOBALS['conexion'];
 
 // Validar que los datos hayan sido enviados
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -12,7 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $nombre = trim($_POST['nombre'] ?? '');
 $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
-$rol = trim($_POST['rol'] ?? '');
 
 // Validaciones básicas
 $errores = [];
@@ -29,39 +29,37 @@ if (empty($password)) {
     $errores[] = "La contraseña es requerida";
 }
 
-if (empty($rol) || !in_array($rol, ['admin', 'usuario'])) {
-    $errores[] = "Tipo de usuario inválido";
-}
-
 function redirectWithLoginErrors(array $errors, array $oldData = []) {
     $_SESSION['errores_login'] = $errors;
     $_SESSION['old_login'] = $oldData;
+    $_SESSION['notificacion'] = [
+        'tipo' => str_contains(strtolower(implode(' ', $errors)), 'no encontrado') ? 'amarilla' : 'roja',
+        'mensaje' => implode(' ', $errors),
+        'modo' => 'login'
+    ];
     header("Location: index.php");
     exit();
 }
 
-// Si hay errores, redirigir con mensajes
 if (!empty($errores)) {
     redirectWithLoginErrors($errores, [
         'nombre' => $nombre,
         'correo' => $correo,
-        'rol' => $rol,
     ]);
 }
 
 // Consultar usuario con prepared statement
-$sql = "SELECT id, nombre, correo, contrasena, rol FROM usuarios WHERE correo = ? AND rol = ?";
+$sql = "SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil FROM usuarios WHERE correo = ?";
 $stmt = $conexion->prepare($sql);
 
 if (!$stmt) {
     redirectWithLoginErrors(["Error en la consulta: " . $conexion->error], [
         'nombre' => $nombre,
         'correo' => $correo,
-        'rol' => $rol,
     ]);
 }
 
-$stmt->bind_param("ss", $correo, $rol);
+$stmt->bind_param("s", $correo);
 $stmt->execute();
 $resultado = $stmt->get_result();
 
@@ -76,6 +74,11 @@ if ($resultado->num_rows > 0) {
         $_SESSION['nombre'] = $usuario['nombre'];
         $_SESSION['correo'] = $usuario['correo'];
         $_SESSION['rol'] = $usuario['rol'];
+        $_SESSION['genero'] = $usuario['genero'] ?? null;
+        $_SESSION['foto_perfil'] = $usuario['foto_perfil'] ?? null;
+        cargarDatosUsuario($conexion, $usuario['id']);
+        $_SESSION['notificacion'] = ['tipo' => 'verde', 'mensaje' => 'Inicio de sesión exitoso.', 'modo' => 'login'];
+            enviarNotificacion($usuario['correo'], 'Inicio de sesión en Always Beautiful', "Hola {$usuario['nombre']}, se inició sesión en tu cuenta de Always Beautiful.");
         
         // Registrar en historial de actividades (opcional - no bloquea si falla)
         $ip_address = $_SERVER['REMOTE_ADDR'];
@@ -100,7 +103,6 @@ if ($resultado->num_rows > 0) {
         redirectWithLoginErrors(["Contraseña incorrecta"], [
             'nombre' => $nombre,
             'correo' => $correo,
-            'rol' => $rol,
         ]);
     }
     
@@ -108,7 +110,6 @@ if ($resultado->num_rows > 0) {
     redirectWithLoginErrors(["Usuario no encontrado con esas credenciales"], [
         'nombre' => $nombre,
         'correo' => $correo,
-        'rol' => $rol,
     ]);
 }
 

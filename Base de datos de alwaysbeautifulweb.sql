@@ -1,11 +1,17 @@
-CREATE DATABASE IF NOT EXISTS AlwaysBeautifulDB;
 USE AlwaysBeautifulDB;
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     correo VARCHAR(100) NOT NULL UNIQUE,
     contrasena VARCHAR(255) NOT NULL,
+    fecha_nacimiento DATE NULL,
+    genero ENUM('hombre', 'mujer') NULL,
+    codigo_recuperacion VARCHAR(4) NULL,
+    codigo_expira DATETIME NULL,
     rol VARCHAR(20) DEFAULT 'usuario',
+    foto_perfil VARCHAR(255) NULL,
+    carrito_json LONGTEXT NULL,
+    historial_json LONGTEXT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activo BOOLEAN DEFAULT TRUE
 );

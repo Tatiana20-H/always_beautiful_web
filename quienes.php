@@ -34,6 +34,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="quienes-container">
 
     <img src="IMG/belleza.jpg" class="quienes-img">
