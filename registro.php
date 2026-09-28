@@ -21,7 +21,7 @@ session_start();
             echo '<div class="error-box">';
 
             foreach ($_SESSION['errores'] as $error) {
-                echo '<p>❌ ' . htmlspecialchars($error) . '</p>';
+                echo '<p>' . htmlspecialchars($error) . '</p>';
             }
 
             echo '</div>';
@@ -31,15 +31,23 @@ session_start();
 
         <div class="form-wrapper">
             <h2>Registrarse</h2>
-            <form action="guardar-usuario.php" method="POST">
+            <form action="guardar-usuario.php" method="POST" autocomplete="off">
 
-                <input type="text" name="nombre" placeholder="Nombre completo" required>
+                <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
 
-                <input type="email" name="correo" placeholder="Correo" required>
+                <input type="email" name="correo" placeholder="Correo" autocomplete="off" required>
 
-                <input type="password" name="password" placeholder="Contraseña" required>
+                <input type="date" name="fecha_nacimiento" required>
 
-                <input type="password" name="password_confirm" placeholder="Confirmar contraseña" required>
+                <select name="genero" required>
+                    <option value="">Selecciona tu género</option>
+                    <option value="mujer">Mujer</option>
+                    <option value="hombre">Hombre</option>
+                </select>
+
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
 
                 <button type="submit">Crear cuenta</button>
 
@@ -51,6 +59,15 @@ session_start();
     </div>
 
 </div>
+
+<script>
+document.querySelectorAll('.ver-password').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        const campo = this.parentElement.querySelector('input');
+        campo.type = campo.type === 'password' ? 'text' : 'password';
+    });
+});
+</script>
 
 </body>
 </html>

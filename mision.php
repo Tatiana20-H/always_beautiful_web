@@ -34,6 +34,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="mision-container">
 
     <img src="IMG/Flor.jpg" class="mision-img">
@@ -50,7 +52,7 @@ include("header.php");
     <p>
         Buscamos ofrecer una experiencia de compra cómoda, confiable y moderna,
         acompañando a nuestros clientes en su día a día con productos que inspiren seguridad,
-        bienestar y confianza ✨.
+        bienestar y confianza.
     </p>
 
     <br>

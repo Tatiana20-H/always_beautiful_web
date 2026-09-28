@@ -1,5 +1,9 @@
 <?php
 session_start();
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: inicio.php');
+    exit();
+}
 $total = 0;
 ?>
 
@@ -29,11 +33,11 @@ foreach($_SESSION['carrito'] as $nombre => $producto):
         <h3><?= $nombre ?></h3>
 
         <div class="cantidad">
-            <a href="sumar.php?producto=<?= urlencode($nombre) ?>" class="btn-cantidad">➕</a>
+            <a href="sumar.php?producto=<?= urlencode($nombre) ?>" class="btn-cantidad">+</a>
 
             <span><?= $cantidad ?></span>
 
-            <a href="restar.php?producto=<?= urlencode($nombre) ?>" class="btn-cantidad">➖</a>
+            <a href="restar.php?producto=<?= urlencode($nombre) ?>" class="btn-cantidad">-</a>
         </div>
 
         <p class="precio">$<?= number_format($precio * $cantidad, 0, ',', '.') ?></p>
@@ -50,7 +54,7 @@ endforeach;
 else:
 ?>
 
-<p class="vacio">Tu carrito está vacío 🛒</p>
+<p class="vacio">Tu carrito está vacío</p>
 
 <?php endif; ?>
 
@@ -58,6 +62,12 @@ else:
 
 <h2 class="total">Total: $<?= number_format($total, 0, ',', '.') ?></h2>
 
-<div class="contenedor-pagar">
-    <a href="pagar.php" class="btn-pagar">Pagar</a>
+<?php if (!empty($_SESSION['carrito'])): ?>
+<div class="pasarela-pago">
+    <h2>Pagar con Wompi</h2>
+    <p>En el siguiente paso podrás elegir Nequi o Bancolombia.</p>
+    <form action="pagar.php" method="POST" id="form-pago">
+        <button type="submit" class="btn-pagar">Continuar a Nequi o Bancolombia</button>
+    </form>
 </div>
+<?php endif; ?>

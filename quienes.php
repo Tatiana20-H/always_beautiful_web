@@ -34,14 +34,16 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="quienes-container">
 
-    <img src="IMG/belleza.jpg" class="quienes-img">
+    <img src="IMG/Belleza.jpg" class="quienes-img" alt="Productos de belleza">
 
     <h2>¿Quiénes somos?</h2>
 
     <p>
-        En <strong>Always Beautiful</strong> creemos que la belleza comienza desde el amor propio 💕.
+        En <strong>Always Beautiful</strong> creemos que la belleza comienza desde el amor propio.
         Somos una tienda dedicada al cuidado personal, donde encontrarás productos de maquillaje, cuidado de la piel, cabello y accesorios pensados para resaltar lo mejor de ti.
     </p>
 
@@ -49,7 +51,7 @@ include("header.php");
 
     <p>
         Nuestro objetivo es brindarte una experiencia de compra única, con productos de calidad, tendencias actuales y precios accesibles.
-        Queremos acompañarte en cada momento para que te sientas segura, hermosa y auténtica todos los días ✨.
+        Queremos acompañarte en cada momento para que te sientas segura, hermosa y auténtica todos los días.
     </p>
 
 </div>

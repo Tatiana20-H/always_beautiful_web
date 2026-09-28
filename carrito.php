@@ -1,5 +1,12 @@
 <?php
 session_start();
+include("conexion.php");
+$conexion = $GLOBALS['conexion'];
+
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: index.php');
+    exit();
+}
 
 if(!isset($_SESSION['carrito'])){
     $_SESSION['carrito'] = [];
@@ -22,7 +29,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
         ];
     }
 
-    // 🔥 REGRESAR A LA MISMA PÁGINA
+    guardarDatosUsuario($conexion);
+
+    // Regresar a la misma página
     if(isset($_SERVER['HTTP_REFERER'])){
         header("Location: " . $_SERVER['HTTP_REFERER']);
     } else {
