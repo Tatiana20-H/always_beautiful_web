@@ -8,11 +8,11 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     // Guardar en sesión (opcional)
     session_start();
-    $_SESSION["mensaje"] = "Mensaje enviado correctamente 💖";
+    $_SESSION["mensaje"] = "Mensaje enviado correctamente";
 
     header("Location: mensaje_enviado.php");
     exit();
 } else {
-    echo "<h2 style='text-align:center;'>⚠️ Acceso no válido</h2>";
+    echo "<h2 style='text-align:center;'>Acceso no válido</h2>";
 }
 ?>

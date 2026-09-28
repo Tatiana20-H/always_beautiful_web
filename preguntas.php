@@ -44,12 +44,14 @@ h2{
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 </head>
 <body>
 
 <?php include("header.php"); ?>
 
-<div class="container">
+<div class="container legal-container">
 
 <h2>Preguntas Frecuentes</h2>
 

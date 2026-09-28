@@ -34,17 +34,19 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="ubicacion-container">
 
-    <h2>Nuestra Ubicación 📍</h2>
+    <h2>Nuestra Ubicación</h2>
 
     <p>
-        Visítanos en Neiva, Huila +  
+        Visítanos en Neiva, Huila.
         Estamos listos para atenderte y ayudarte a encontrar lo mejor en belleza.
     </p>
 
     <p>
-        📍 Neiva, Huila - Colombia
+        Neiva, Huila - Colombia
     </p>
 
     <!-- MAPA DE NEIVA -->

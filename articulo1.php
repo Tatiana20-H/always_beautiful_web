@@ -45,6 +45,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="articulo-container">
 
     <h2>Rutina básica de skincare</h2>

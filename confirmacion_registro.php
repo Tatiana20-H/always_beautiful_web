@@ -94,7 +94,7 @@ p{
 <body>
 
 <div class="container">
-    <div class="check">✓</div>
+    <div class="check"></div>
 
     <h1>¡Registro Exitoso!</h1>
     <p>Tu cuenta ha sido creada correctamente.</p>

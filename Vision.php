@@ -34,6 +34,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="vision-container">
 
     <img src="IMG/Flor.jpg" class="vision-img">
