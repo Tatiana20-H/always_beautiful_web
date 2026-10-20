@@ -10,6 +10,11 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
+    command: >-
+      sh -c "mkdir -p /var/www/html/IMG/mensajes
+      && chown www-data:www-data /var/www/html/IMG/mensajes
+      && chmod 0775 /var/www/html/IMG/mensajes
+      && exec apache2-foreground"
     depends_on:
       db:
         condition: service_healthy
@@ -19,6 +24,10 @@ services:
       DB_USER: root
       DB_PASSWORD: ""
       DB_NAME: alwaysbeautifuldb
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
 
   db:
     image: mariadb:11.4

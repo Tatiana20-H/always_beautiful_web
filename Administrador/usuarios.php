@@ -175,7 +175,7 @@
                     while ($row = mysqli_fetch_assoc($resultado)) {
                         $badge_rol = $row['rol'] === 'admin' ? '<span class="badge-rol badge-admin">Administrador</span>' : '<span class="badge-rol badge-usuario">Cliente</span>';
                         $estado = $row['activo'] ? '<span style="color: #28a745; font-weight: bold;">Activo</span>' : '<span style="color: #dc3545; font-weight: bold;">Inactivo</span>';
-                        $fecha = date('d/m/Y', strtotime($row['fecha_registro']));
+                        $fecha = date('d/m/Y H:i', strtotime($row['fecha_registro']));
                         
                         echo "<tr>
                             <td><strong>#{$row['id']}</strong></td>

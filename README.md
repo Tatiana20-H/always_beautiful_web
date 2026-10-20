@@ -52,12 +52,11 @@ Docker ejecuta el esquema automáticamente al crear por primera vez el volumen `
 
 Abre en Windows `http://localhost/` o `http://localhost:8080/`. Para Live Share, comparte el puerto `80` desde VS Code y tu compañero debe abrir la URL que Live Share le proporcione. La base de datos se conserva en el volumen `db_data` y Compose espera a que MySQL esté listo antes de iniciar la web.
 
-El mismo formulario de inicio de sesión sirve para ambos roles:
+El inicio de sesión utiliza el correo registrado y la contraseña; no solicita el nombre ni permite elegir el rol. La única cuenta con acceso administrativo es `tachiandrade79@gmail.com`; la contraseña inicial es `123456` y puede cambiarse desde Mi perfil. Las cuentas administrativas antiguas se convierten a cuentas normales al iniciar la aplicación.
 
-- Usuario: correo y contraseña de la cuenta registrada.
-- Administrador: `Tatianaadmin@gmail.com` con contraseña `123456`.
+La recuperación de contraseña y otras notificaciones utilizan SMTP de Gmail. Copia `.env.example` a `.env`, activa la verificación en dos pasos en esa cuenta de Google y crea una contraseña de aplicación. Sustituye el valor de `MAIL_PASSWORD` por esa contraseña de aplicación y reinicia el servicio web con `docker compose up -d --build web`. No uses ni publiques la contraseña normal de Gmail. Sin estas variables configuradas, la recuperación no afirmará que el código fue enviado.
 
-Al iniciar sesión con el rol `admin`, la aplicación redirige automáticamente a `Administrador/index.php`.
+Al iniciar sesión con el correo administrador, la aplicación redirige automáticamente a `Administrador/index.php`.
 
 ## Qué se mantiene
 - Archivos PHP y recursos web: la mayor parte del sitio se encuentra en la raíz y en `Administrador/`.

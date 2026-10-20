@@ -10,10 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Obtener y limpiar datos
-$nombre = trim($_POST['nombre'] ?? '');
 $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
-$rolSolicitado = strtolower(trim((string) ($_POST['rol'] ?? '')));
 
 // Validaciones básicas
 $errores = [];
@@ -24,10 +22,6 @@ if (empty($correo) || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
 
 if (empty($password)) {
     $errores[] = "La contraseña es requerida";
-}
-
-if (!in_array($rolSolicitado, ['usuario', 'admin'], true)) {
-    $errores[] = "Selecciona un tipo de cuenta válido";
 }
 
 function redirectWithLoginErrors(array $errors, array $oldData = []) {
@@ -44,18 +38,16 @@ function redirectWithLoginErrors(array $errors, array $oldData = []) {
 
 if (!empty($errores)) {
     redirectWithLoginErrors($errores, [
-        'nombre' => $nombre,
         'correo' => $correo,
     ]);
 }
 
 // Consultar usuario con prepared statement
-$sql = "SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil FROM usuarios WHERE correo = ? LIMIT 1";
+$sql = "SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil FROM usuarios WHERE LOWER(correo) = LOWER(?) LIMIT 1";
 $stmt = $conexion->prepare($sql);
 
 if (!$stmt) {
     redirectWithLoginErrors(["Error en la consulta: " . $conexion->error], [
-        'nombre' => $nombre,
         'correo' => $correo,
     ]);
 }
@@ -71,11 +63,9 @@ if ($resultado->num_rows > 0) {
     // Verificar contraseña encriptada
     if (password_verify($password, $usuario['contrasena'])) {
 
-        if (strcasecmp(trim((string) $usuario['nombre']), $nombre) !== 0 || $rolSolicitado !== $rolUsuario) {
-            redirectWithLoginErrors(["Datos inválidos. Verifica tus datos y el tipo de cuenta seleccionado."], [
-                'nombre' => $nombre,
-                'correo' => $correo,
-            ]);
+        $esCorreoAdministrador = strcasecmp(trim($usuario['correo']), 'tachiandrade79@gmail.com') === 0;
+        if (($esCorreoAdministrador && $rolUsuario !== 'admin') || (!$esCorreoAdministrador && $rolUsuario === 'admin')) {
+            redirectWithLoginErrors(["La cuenta administrativa no está configurada correctamente."], ['correo' => $correo]);
         }
         
         // Login exitoso - guardar sesión
@@ -112,14 +102,12 @@ if ($resultado->num_rows > 0) {
         
     } else {
         redirectWithLoginErrors(["Contraseña incorrecta"], [
-            'nombre' => $nombre,
             'correo' => $correo,
         ]);
     }
     
 } else {
     redirectWithLoginErrors(["Usuario no encontrado con esas credenciales"], [
-        'nombre' => $nombre,
         'correo' => $correo,
     ]);
 }

@@ -5,84 +5,36 @@
 <meta charset="UTF-8">
 <title>Política de Privacidad - Always Beautiful</title>
 <link rel="stylesheet" href="styles.css">
-
-<style>
-.container{
-    width: 80%;
-    margin: 40px auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    line-height: 1.6;
-}
-
-h2{
-    text-align: center;
-    color: #d63384;
-}
-
-h3{
-    color: #d63384;
-    margin-top: 20px;
-}
-
-p{
-    margin: 10px 0;
-}
-
-.btn{
-    display: block;
-    margin: 30px auto;
-    background: #d63384;
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 5px;
-    text-align: center;
-    text-decoration: none;
-}
-</style>
-
-<link rel="stylesheet" href="styles.css">
-
 </head>
 <body>
 
 <?php include("header.php"); ?>
 
-<div class="container legal-container">
-
-<h2>Política de Privacidad</h2>
-
-<p>En <strong>Always Beautiful</strong>, nos comprometemos a proteger la privacidad de nuestros usuarios y garantizar la seguridad de su información personal.</p>
-
-<h3>1. Información que recopilamos</h3>
-<p>Podemos recopilar información personal como nombre, correo electrónico, dirección y datos de contacto cuando el usuario realiza una compra o se registra en el sitio.</p>
-
-<h3>2. Uso de la información</h3>
-<p>La información recopilada se utiliza para procesar pedidos, mejorar nuestros servicios, brindar atención al cliente y enviar notificaciones relacionadas con la compra.</p>
-
-<h3>3. Protección de datos</h3>
-<p>Implementamos medidas de seguridad para proteger la información personal del usuario contra accesos no autorizados, alteraciones o divulgación.</p>
-
-<h3>4. Compartir información</h3>
-<p>No vendemos ni compartimos la información personal con terceros, excepto cuando sea necesario para completar el proceso de compra (por ejemplo, servicios de envío).</p>
-
-<h3>5. Cookies</h3>
-<p>El sitio puede utilizar cookies para mejorar la experiencia del usuario, recordando preferencias y facilitando la navegación.</p>
-
-<h3>6. Derechos del usuario</h3>
-<p>El usuario puede solicitar la actualización o eliminación de sus datos personales en cualquier momento.</p>
-
-<h3>7. Cambios en la política</h3>
-<p>Nos reservamos el derecho de modificar esta política en cualquier momento. Los cambios serán publicados en esta misma página.</p>
-
-<h3>8. Contacto</h3>
-<p>Si tienes dudas sobre nuestra política de privacidad, puedes comunicarte a través de la sección de contacto.</p>
-
-<a href="inicio.php" class="btn">Volver al inicio</a>
-
-</div>
+<main class="legal-page legal-privacidad">
+    <header class="legal-hero">
+        <p class="legal-eyebrow">Tus datos y tu cuenta</p>
+        <h1>Política de privacidad</h1>
+        <p>Te explicamos qué información se utiliza en el sitio y cómo puedes solicitar cambios.</p>
+    </header>
+    <div class="legal-layout">
+        <nav class="legal-indice" aria-label="Contenido de la política de privacidad">
+            <h2>En esta página</h2>
+            <a href="#recopilacion">Información recopilada</a><a href="#uso">Uso de la información</a><a href="#proteccion">Protección de datos</a><a href="#compartir">Compartir información</a><a href="#cookies">Cookies</a><a href="#derechos">Derechos del usuario</a><a href="#cambios">Cambios en la política</a><a href="#contacto">Contacto</a>
+        </nav>
+        <div class="legal-secciones">
+            <p class="legal-introduccion">En <strong>Always Beautiful</strong>, nos comprometemos a proteger la privacidad de nuestros usuarios y cuidar su información personal.</p>
+            <section class="legal-seccion" id="recopilacion"><span>01</span><div><h2>Información que recopilamos</h2><p>Podemos recopilar información como nombre, correo electrónico, dirección y datos de contacto cuando el usuario se registra o realiza una compra.</p></div></section>
+            <section class="legal-seccion" id="uso"><span>02</span><div><h2>Uso de la información</h2><p>La información se utiliza para procesar pedidos, brindar atención al cliente, mejorar los servicios y enviar notificaciones relacionadas con la compra.</p></div></section>
+            <section class="legal-seccion" id="proteccion"><span>03</span><div><h2>Protección de datos</h2><p>Aplicamos medidas de seguridad para reducir el riesgo de acceso no autorizado, alteración o divulgación de la información personal.</p></div></section>
+            <section class="legal-seccion" id="compartir"><span>04</span><div><h2>Compartir información</h2><p>No vendemos la información personal. Sólo puede compartirse con servicios necesarios para completar una compra, como los servicios de envío.</p></div></section>
+            <section class="legal-seccion" id="cookies"><span>05</span><div><h2>Cookies</h2><p>El sitio puede utilizar cookies para recordar preferencias y facilitar la navegación. Puedes administrar su uso desde la configuración de tu navegador.</p></div></section>
+            <section class="legal-seccion" id="derechos"><span>06</span><div><h2>Derechos del usuario</h2><p>Puedes solicitar la actualización o eliminación de tus datos personales. Para proteger tu cuenta, podríamos necesitar verificar tu identidad antes de procesar la solicitud.</p></div></section>
+            <section class="legal-seccion" id="cambios"><span>07</span><div><h2>Cambios en la política</h2><p>Si actualizamos esta política, publicaremos la versión vigente en esta página.</p></div></section>
+            <section class="legal-seccion" id="contacto"><span>08</span><div><h2>Contacto</h2><p>Si tienes dudas o quieres ejercer tus derechos sobre los datos, <a href="formulario.php">comunícate con nuestro equipo</a>.</p></div></section>
+            <a href="inicio.php" class="legal-volver">Volver al inicio <span aria-hidden="true">→</span></a>
+        </div>
+    </div>
+</main>
 
 </body>
 </html>

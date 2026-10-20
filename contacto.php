@@ -166,13 +166,8 @@ if ($usuario_logueado) {
         <div class="auth-panel" data-auth-panel="login">
             <h2>Inicia sesión para continuar</h2>
             <form action="login.php" method="POST" autocomplete="on">
-                <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
                 <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <select name="rol" required>
-                    <option value="usuario">Usuario</option>
-                    <option value="admin">Administrador</option>
-                </select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
@@ -257,15 +252,15 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
 .contacto-container{
     max-width: 600px;
     margin: 50px auto;
-    background: #ffe6f0;
+    background: #f8f5f0;
     padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 20px rgba(64,56,52,0.12);
 }
 
 .contacto-container h2{
     text-align: center;
-    color: #d63384;
+    color: #481b18;
     margin-bottom: 20px;
 }
 
@@ -280,7 +275,7 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
 }
 
 .aviso-registro a {
-    color: #d63384;
+    color: #743629;
     font-weight: bold;
     text-decoration: none;
     cursor: pointer;
@@ -296,28 +291,29 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
     padding: 12px;
     margin: 10px 0;
     border-radius: 10px;
-    border: 2px solid #ddd;
+    border: 1px solid #cdbfb3;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    color: #403834;
+    font-family: Georgia, "Times New Roman", serif;
     transition: border-color 0.3s;
 }
 
 .contacto-container input:focus,
 .contacto-container textarea:focus {
     outline: none;
-    border-color: #d63384;
-    box-shadow: 0 0 5px rgba(214, 51, 132, 0.3);
+    border-color: #b87552;
+    box-shadow: 0 0 0 3px rgba(184, 117, 82, 0.15);
 }
 
 .contacto-container input:disabled {
-    background: #f0f0f0;
+    background: #eadbd0;
     cursor: not-allowed;
 }
 
 .contacto-container button{
     width: 100%;
     padding: 12px;
-    background: linear-gradient(135deg, #d63384 0%, #e85ba8 100%);
+    background: #481b18;
     color: white;
     border: none;
     border-radius: 10px;
@@ -328,12 +324,13 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
 }
 
 .contacto-container button:hover{
+    background: #b87552;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(214, 51, 132, 0.3);
+    box-shadow: 0 5px 15px rgba(72, 27, 24, 0.2);
 }
 
 .contacto-container button:disabled {
-    background: #ccc;
+    background: #75665d;
     cursor: not-allowed;
     transform: none;
 }
@@ -357,11 +354,11 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
 }
 
 .usuario-info {
-    background: rgba(214, 51, 132, 0.1);
+    background: #eadbd0;
     padding: 12px;
     border-radius: 10px;
     margin-bottom: 15px;
-    color: #555;
+    color: #403834;
     font-size: 0.9em;
 }
 </style>

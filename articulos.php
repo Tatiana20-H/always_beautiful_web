@@ -3,112 +3,51 @@ session_start();
 include("header.php");
 ?>
 
-<link rel="stylesheet" href="styles.css">
-
-<style>
-.articulos-container{
-    max-width: 1100px;
-    margin: 50px auto;
-    padding: 20px;
-}
-
-.articulos-container h2{
-    text-align: center;
-    color: #b8869a;
-    font-size: 32px;
-    margin-bottom: 30px;
-}
-
-.articulos-grid{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.articulo-card{
-    background: #ffe6f0;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    transition: 0.3s;
-}
-
-.articulo-card:hover{
-    transform: scale(1.03);
-}
-
-.articulo-card img{
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-}
-
-.articulo-card .contenido{
-    padding: 20px;
-}
-
-.articulo-card h3{
-    color: #b8869a;
-    margin-bottom: 10px;
-}
-
-.articulo-card p{
-    color: #555;
-    font-size: 15px;
-}
-
-.articulo-card a{
-    display: inline-block;
-    margin-top: 10px;
-    background: #525252;
-    color: white;
-    padding: 8px 15px;
-    border-radius: 10px;
-    text-decoration: none;
-}
-</style>
-
-<link rel="stylesheet" href="styles.css">
-
-<div class="articulos-container">
-
-    <h2>Artículos de Belleza </h2>
+<main class="articulos-container">
+    <header class="articulos-encabezado">
+        <p class="articulos-eyebrow">Guías y consejos</p>
+        <h1>Artículos de belleza</h1>
+        <p>Ideas sencillas para cuidar tu piel, maquillarte y mantener tu cabello saludable.</p>
+    </header>
 
     <div class="articulos-grid">
-
-        <!-- ARTÍCULO 1 -->
-        <div class="articulo-card">
-            <img src="IMG/blog1.jpg">
+        <article class="articulo-card">
+            <a class="articulo-card-imagen" href="articulo1.php" aria-label="Leer Rutina básica de skincare">
+                <img src="IMG/blog1.jpg" alt="Mujer aplicando productos para el cuidado facial" loading="lazy">
+            </a>
             <div class="contenido">
-                <h3>Rutina básica de skincare</h3>
-                <p>Aprende los pasos esenciales para cuidar tu piel todos los días.</p>
-                <a href="articulo1.php">Leer más</a>
+                <p class="articulo-categoria">Cuidado de la piel</p>
+                <h2>Rutina básica de skincare</h2>
+                <p>Ordena los pasos esenciales de mañana y noche para cuidar tu piel con constancia.</p>
+                <a class="articulo-enlace" href="articulo1.php">Leer artículo <span aria-hidden="true">→</span></a>
             </div>
-        </div>
+        </article>
 
-        <!-- ARTÍCULO 2 -->
-        <div class="articulo-card">
-            <img src="IMG/blog2.jpg">
+        <article class="articulo-card">
+            <a class="articulo-card-imagen" href="articulo2.php" aria-label="Leer Maquillaje natural">
+                <img src="IMG/blog2.jpg" alt="Maquillaje en tonos suaves para un acabado natural" loading="lazy">
+            </a>
             <div class="contenido">
-                <h3>Maquillaje natural</h3>
-                <p>Descubre cómo lograr un look natural y hermoso en minutos.</p>
-                <a href="articulo2.php">Leer más</a>
+                <p class="articulo-categoria">Maquillaje</p>
+                <h2>Maquillaje natural</h2>
+                <p>Una guía práctica para preparar la piel y conseguir un acabado ligero y cómodo.</p>
+                <a class="articulo-enlace" href="articulo2.php">Leer artículo <span aria-hidden="true">→</span></a>
             </div>
-        </div>
+        </article>
 
-        <!-- ARTÍCULO 3 -->
-        <div class="articulo-card">
-            <img src="IMG/blog3.jpg">
+        <article class="articulo-card">
+            <a class="articulo-card-imagen" href="articulo3.php" aria-label="Leer Cuidado del cabello">
+                <img src="IMG/blog3.jpg" alt="Consejos de cuidado y peinado para el cabello" loading="lazy">
+            </a>
             <div class="contenido">
-                <h3>Cuidado del cabello</h3>
-                <p>Consejos para mantener tu cabello sano, brillante y fuerte.</p>
-                <a href="articulo3.php">Leer más</a>
+                <p class="articulo-categoria">Cuidado del cabello</p>
+                <h2>Cuidado del cabello</h2>
+                <p>Hábitos de lavado, acondicionamiento y protección para una rutina capilar sencilla.</p>
+                <a class="articulo-enlace" href="articulo3.php">Leer artículo <span aria-hidden="true">→</span></a>
             </div>
-        </div>
-
+        </article>
     </div>
-
-</div>
+</main>
 
 </body>
 </html>

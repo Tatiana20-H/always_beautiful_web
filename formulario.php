@@ -8,7 +8,13 @@ $usuario_logueado = false;
 $nombre_usuario = "";
 $correo_usuario = "";
 $notificacion_contacto = $_SESSION['notificacion_contacto'] ?? null;
+$datos_pendientes = $_SESSION['datos_contacto_pendientes'] ?? [];
 unset($_SESSION['notificacion_contacto']);
+unset($_SESSION['datos_contacto_pendientes']);
+
+if (!isset($_SESSION['token_csrf_contacto'])) {
+    $_SESSION['token_csrf_contacto'] = bin2hex(random_bytes(32));
+}
 
 if (isset($_SESSION['usuario_id'])) {
     $usuario_logueado = true;
@@ -121,13 +127,8 @@ if ($usuario_logueado) {
         <div class="auth-panel" data-auth-panel="login">
             <h2>Inicia sesión para continuar</h2>
             <form action="login.php" method="POST" autocomplete="on">
-                <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
                 <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <select name="rol" required>
-                    <option value="usuario">Usuario</option>
-                    <option value="admin">Administrador</option>
-                </select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
@@ -208,159 +209,74 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
 
 <link rel="stylesheet" href="styles.css">
 
-<style>
-.formulario-container {
-    max-width: 600px;
-    margin: 50px auto;
-}
+<main class="formulario-container contacto-layout">
+    <section class="contacto-intro" aria-labelledby="titulo-contacto">
+        <p class="contacto-eyebrow">Atención al cliente</p>
+        <h1 id="titulo-contacto">Estamos aquí para ayudarte.</h1>
+        <p>Cuéntanos qué necesitas y nuestro equipo revisará tu mensaje desde la bandeja de atención.</p>
+        <div class="contacto-destino">
+            <span class="contacto-destino-icono" aria-hidden="true">✉</span>
+            <span><strong>Equipo Always Beautiful</strong><small>Recepción directa en administración</small></span>
+        </div>
+    </section>
 
-.formulario-contacto {
-    background: #ffe6f0;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-.formulario-contacto h2 {
-    text-align: center;
-    color: #d63384;
-    margin-bottom: 30px;
-}
-
-.usuario-info {
-    background: rgba(214, 51, 132, 0.1);
-    padding: 12px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    color: #555;
-    font-size: 0.9em;
-}
-
-.aviso-registro {
-    background: #fff3cd;
-    color: #856404;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    border-left: 4px solid #ffc107;
-    text-align: center;
-}
-
-.aviso-registro a {
-    color: #d63384;
-    font-weight: bold;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.aviso-registro a:hover {
-    text-decoration: underline;
-}
-
-.formulario-contacto input,
-.formulario-contacto textarea {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border-radius: 10px;
-    border: 2px solid #ddd;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-    transition: border-color 0.3s;
-}
-
-.formulario-contacto input:focus,
-.formulario-contacto textarea:focus {
-    outline: none;
-    border-color: #d63384;
-    box-shadow: 0 0 5px rgba(214, 51, 132, 0.3);
-}
-
-.formulario-contacto input:disabled {
-    background: #f0f0f0;
-    cursor: not-allowed;
-}
-
-.formulario-contacto button {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #d63384 0%, #e85ba8 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 1em;
-    transition: all 0.3s;
-    margin-top: 10px;
-}
-
-.formulario-contacto button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(214, 51, 132, 0.3);
-}
-
-.formulario-contacto button:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.formulario-contacto form[style*="opacity: 0.6"] {
-    pointer-events: none;
-}
-</style>
-
-<link rel="stylesheet" href="styles.css">
-
-<div class="formulario-container">
+    <section class="contacto-formulario-columna" aria-label="Formulario de contacto">
 
     <?php if ($notificacion_contacto): ?>
-        <div class="notificacion-contacto" role="alert">
-            <?php echo htmlspecialchars($notificacion_contacto); ?>
+        <?php
+            $notificacionTipo = is_array($notificacion_contacto) ? ($notificacion_contacto['tipo'] ?? 'error') : 'error';
+            $notificacionTexto = is_array($notificacion_contacto) ? ($notificacion_contacto['mensaje'] ?? '') : $notificacion_contacto;
+        ?>
+        <div class="contacto-notificacion <?= $notificacionTipo === 'exito' ? 'es-exito' : 'es-error' ?>" role="<?= $notificacionTipo === 'exito' ? 'status' : 'alert' ?>">
+            <?= htmlspecialchars((string) $notificacionTexto, ENT_QUOTES, 'UTF-8') ?>
         </div>
     <?php endif; ?>
 
-    <?php if (!$usuario_logueado): ?>
-        <div class="aviso-registro">
-            <strong>Debes iniciar sesión</strong><br>
-            Para enviar un mensaje, primero debes <a onclick="document.getElementById('autenticacion').style.display='flex'">registrarte o iniciar sesión</a>.
-        </div>
-    <?php else: ?>
-        <div class="usuario-info">
-            Conectado como: <strong><?php echo htmlspecialchars($nombre_usuario); ?></strong>
-        </div>
-    <?php endif; ?>
-
-    <form action="Procesar_formulario.php" method="POST" enctype="multipart/form-data" class="formulario formulario-contacto" autocomplete="off" <?php echo !$usuario_logueado ? 'style="opacity: 0.6; pointer-events: none;"' : ''; ?>>
-
-        <h2>Contáctanos 💌</h2>
+    <form action="Procesar_formulario.php" method="POST" enctype="multipart/form-data" class="formulario formulario-contacto" autocomplete="on">
+        <header class="contacto-formulario-header">
+            <p class="contacto-formulario-kicker">Contacto</p>
+            <h2>Envíanos un mensaje</h2>
+            <p>Los campos marcados son obligatorios.</p>
+        </header>
+        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf_contacto'], ENT_QUOTES, 'UTF-8') ?>">
 
         <?php if ($usuario_logueado): ?>
-            <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($nombre_usuario); ?>">
-            <input type="hidden" name="correo" value="<?php echo htmlspecialchars($correo_usuario); ?>">
+            <input type="hidden" name="nombre" value="<?= htmlspecialchars($nombre_usuario, ENT_QUOTES, 'UTF-8') ?>">
+            <input type="hidden" name="correo" value="<?= htmlspecialchars($correo_usuario, ENT_QUOTES, 'UTF-8') ?>">
+            <div class="contacto-identidad">Enviaremos tu mensaje asociado a <strong><?= htmlspecialchars($nombre_usuario, ENT_QUOTES, 'UTF-8') ?></strong> · <?= htmlspecialchars($correo_usuario, ENT_QUOTES, 'UTF-8') ?></div>
+        <?php else: ?>
+            <div class="contacto-campos-identidad">
+                <label class="contacto-campo" for="contacto-nombre">Nombre
+                    <input id="contacto-nombre" type="text" name="nombre" maxlength="100" value="<?= htmlspecialchars($datos_pendientes['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>" autocomplete="name" required>
+                </label>
+                <label class="contacto-campo" for="contacto-correo">Correo electrónico
+                    <input id="contacto-correo" type="email" name="correo" maxlength="100" value="<?= htmlspecialchars($datos_pendientes['correo'] ?? '', ENT_QUOTES, 'UTF-8') ?>" autocomplete="email" required>
+                </label>
+            </div>
         <?php endif; ?>
 
-        <input type="text" name="asunto" placeholder="Asunto" 
-               <?php echo !$usuario_logueado ? 'disabled' : ''; ?> required>
+        <label class="contacto-campo" for="contacto-asunto">Asunto
+            <input id="contacto-asunto" type="text" name="asunto" maxlength="200" value="<?= htmlspecialchars($datos_pendientes['asunto'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="¿Sobre qué trata tu consulta?" required>
+        </label>
 
-        <div class="mensaje-contenedor">
-            <textarea name="mensaje" placeholder="Escribe tu mensaje..." 
-                      <?php echo !$usuario_logueado ? 'disabled' : ''; ?> required></textarea>
-            <label class="foto-mensaje" title="Adjuntar una foto">
-                <span aria-hidden="true">📷</span>
-                <span>Subir foto</span>
-                <input type="file" name="foto_mensaje" accept="image/jpeg,image/png,image/webp">
-            </label>
-        </div>
+        <label class="contacto-campo" for="contacto-mensaje">Mensaje
+            <div class="mensaje-contenedor">
+                <textarea id="contacto-mensaje" name="mensaje" rows="7" placeholder="Escribe aquí los detalles de tu consulta..." required><?= htmlspecialchars($datos_pendientes['mensaje'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+                <label class="foto-mensaje" title="Adjuntar una foto">
+                    <span aria-hidden="true">📷</span>
+                    <span>Adjuntar foto</span>
+                    <input type="file" name="foto_mensaje" accept="image/jpeg,image/png,image/webp">
+                </label>
+                <span class="contacto-ayuda-archivo">JPG, PNG o WEBP, máximo 5 MB</span>
+            </div>
+        </label>
 
-        <button type="submit" <?php echo !$usuario_logueado ? 'disabled' : ''; ?>>
-            <?php echo $usuario_logueado ? 'Enviar mensaje' : 'Inicia sesión para enviar'; ?>
+        <button type="submit">
+            Enviar mensaje <span aria-hidden="true">→</span>
         </button>
-
     </form>
-
-</div>
+    </section>
+</main>
 
 </body>
 </html>

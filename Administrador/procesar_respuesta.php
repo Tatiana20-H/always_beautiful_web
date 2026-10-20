@@ -1,6 +1,7 @@
 <?php
 include("Seguridad.php");
 include("../conexion.php");
+require_once __DIR__ . '/../migracion_respuestas_leidas.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: mensajes.php');
@@ -8,8 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $mensaje_id = intval($_POST['mensaje_id'] ?? 0);
-$respuesta = mysqli_real_escape_string($conexion, $_POST['respuesta'] ?? '');
-$admin_id = intval($_SESSION['id'] ?? 0);
+$respuesta = trim((string) ($_POST['respuesta'] ?? ''));
+$admin_id = intval($_SESSION['usuario_id'] ?? 0);
 
 if (empty($mensaje_id) || empty($respuesta) || empty($admin_id)) {
     $_SESSION['error'] = "Datos incompletos.";
@@ -18,25 +19,37 @@ if (empty($mensaje_id) || empty($respuesta) || empty($admin_id)) {
 }
 
 // Obtener datos del mensaje original
-$sql = "SELECT correo, nombre, asunto FROM mensajes_contacto WHERE id = $mensaje_id";
-$resultado = mysqli_query($conexion, $sql);
+$stmtMensaje = mysqli_prepare($conexion, 'SELECT correo, nombre, asunto FROM mensajes_contacto WHERE id = ? LIMIT 1');
+if (!$stmtMensaje) {
+    $_SESSION['error'] = "Mensaje no encontrado.";
+    header('Location: mensajes.php');
+    exit;
+}
+mysqli_stmt_bind_param($stmtMensaje, 'i', $mensaje_id);
+mysqli_stmt_execute($stmtMensaje);
+$resultado = mysqli_stmt_get_result($stmtMensaje);
+$mensaje_original = $resultado ? mysqli_fetch_assoc($resultado) : null;
+mysqli_stmt_close($stmtMensaje);
 
-if (!$resultado || mysqli_num_rows($resultado) === 0) {
+if (!$mensaje_original) {
     $_SESSION['error'] = "Mensaje no encontrado.";
     header('Location: mensajes.php');
     exit;
 }
 
-$mensaje_original = mysqli_fetch_assoc($resultado);
-
 // Insertar respuesta en la base de datos
 $sql_insert = "INSERT INTO respuestas_mensajes (mensaje_id, admin_id, respuesta) VALUES (?, ?, ?)";
 if ($stmt = mysqli_prepare($conexion, $sql_insert)) {
-    mysqli_stmt_bind_param($stmt, "iss", $mensaje_id, $admin_id, $respuesta);
+    mysqli_stmt_bind_param($stmt, "iis", $mensaje_id, $admin_id, $respuesta);
     
     if (mysqli_stmt_execute($stmt)) {
         // Actualizar estado a respondido
-        mysqli_query($conexion, "UPDATE mensajes_contacto SET estado='respondido' WHERE id=$mensaje_id");
+        $stmtEstado = mysqli_prepare($conexion, "UPDATE mensajes_contacto SET estado='respondido' WHERE id = ?");
+        if ($stmtEstado) {
+            mysqli_stmt_bind_param($stmtEstado, 'i', $mensaje_id);
+            mysqli_stmt_execute($stmtEstado);
+            mysqli_stmt_close($stmtEstado);
+        }
         
         // Enviar email al usuario
         $email_asunto = "Re: " . htmlspecialchars($mensaje_original['asunto']) . " - Always Beautiful";

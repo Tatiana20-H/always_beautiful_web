@@ -3,89 +3,28 @@ session_start();
 include("header.php");
 ?>
 
-<link rel="stylesheet" href="styles.css">
-
-<style>
-.articulo-container{
-    max-width: 800px;
-    margin: 50px auto;
-    background: #ffe6f0;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-.articulo-container h2{
-    color: #b8869a;
-    margin-bottom: 20px;
-}
-
-.articulo-container img{
-    width: 100%;
-    border-radius: 15px;
-    margin-bottom: 20px;
-}
-
-.articulo-container p{
-    color: #555;
-    line-height: 1.8;
-    margin-bottom: 15px;
-}
-
-.pasos{
-    background: white;
-    padding: 20px;
-    border-radius: 15px;
-    margin-top: 20px;
-}
-
-.pasos h3{
-    color: #b8869a;
-    margin-bottom: 10px;
-}
-</style>
-
-<link rel="stylesheet" href="styles.css">
-
-<div class="articulo-container">
-
-    <h2>Maquillaje natural</h2>
-
-    <img src="IMG/blog2.jpg">
-
-    <p>
-        El maquillaje natural es perfecto para el día a día, ya que resalta tu belleza sin recargar el rostro.
-        La idea es lucir fresca, radiante y sencilla.
-    </p>
-
-    <p>
-        Sigue estos pasos para lograr un look natural en pocos minutos:
-    </p>
-
-    <div class="pasos">
-
-        <h3>Paso 1: Preparar la piel</h3>
-        <p>Aplica una crema hidratante y protector solar para una base saludable.</p>
-
-        <h3>Paso 2: Base ligera</h3>
-        <p>Usa una base o BB cream ligera para unificar el tono de tu piel sin exagerar.</p>
-
-        <h3>Paso 3: Rubor suave</h3>
-        <p>Aplica un poco de rubor para dar un efecto fresco y natural a tus mejillas.</p>
-
-        <h3>Paso 4: Ojos sencillos</h3>
-        <p>Utiliza sombras en tonos neutros y una capa ligera de pestañina.</p>
-
-        <h3>Paso 5: Labios naturales</h3>
-        <p>Usa gloss o labial en tonos suaves para un acabado delicado.</p>
-
+<main class="articulo-container">
+    <a class="articulo-volver" href="articulos.php"><span aria-hidden="true">←</span> Volver a artículos</a>
+    <header class="articulo-portada">
+        <p class="articulo-categoria">Maquillaje</p>
+        <h1>Maquillaje natural</h1>
+        <p class="articulo-bajada">Una guía ligera para unificar el tono y resaltar tus rasgos sin complicar la rutina.</p>
+        <img src="IMG/blog2.jpg" alt="Maquillaje en tonos suaves para un acabado natural">
+    </header>
+    <div class="articulo-cuerpo">
+        <p>Un maquillaje natural prioriza la comodidad y deja que la piel se vea como piel. Puedes adaptar cada paso a lo que te gusta: no es necesario usar todos los productos ni seguir un orden rígido.</p>
+        <p>Trabaja con capas finas y difumina con calma. Así puedes añadir cobertura o color poco a poco y detenerte cuando el resultado se sienta bien.</p>
+        <section class="pasos" aria-label="Pasos para un maquillaje natural">
+            <details><summary><span>01</span>Prepara la piel</summary><p>Aplica hidratante y deja que se absorba. Durante el día, usa protector solar como parte de tu rutina habitual.</p></details>
+            <details><summary><span>02</span>Unifica sólo donde quieras</summary><p>Elige una base ligera o corrector y difumina pequeñas cantidades. Mantén la cobertura donde la necesitas y deja libres las zonas que no requieren producto.</p></details>
+            <details><summary><span>03</span>Aporta un toque de color</summary><p>Aplica rubor en poca cantidad y difumínalo hacia las sienes. Si prefieres, puedes usar el mismo tono en labios y mejillas cuando el producto sea apto para ambas zonas.</p></details>
+            <details><summary><span>04</span>Define la mirada</summary><p>Prueba sombras neutras y una capa de máscara de pestañas. Peina las cejas y rellena sólo los espacios que quieras definir.</p></details>
+            <details><summary><span>05</span>Termina con los labios</summary><p>Un bálsamo con color o un labial suave completa el look. Escoge una textura cómoda para llevar durante el día.</p></details>
+        </section>
+        <aside class="articulo-consejo"><strong>Un buen punto de partida</strong><p>Usa menos producto al principio: siempre puedes añadir otra capa si quieres más intensidad.</p></aside>
+        <a class="articulo-volver articulo-volver-final" href="articulos.php">Explorar los otros artículos <span aria-hidden="true">→</span></a>
     </div>
-
-    <p>
-      Tip: Menos es más. Un maquillaje natural resalta tu belleza real sin necesidad de exagerar.
-    </p>
-
-</div>
+</main>
 
 </body>
 </html>

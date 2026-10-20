@@ -296,6 +296,7 @@ if (isset($conexion)) {
             </button>
             <div class="perfil-submenu">
                 <strong><?= htmlspecialchars($_SESSION['usuario'] ?? $_SESSION['nombre'] ?? 'Administrador') ?></strong>
+                <a href="../perfil.php">Mi perfil y contraseña</a>
                 <a href="logout.php">Cerrar sesión</a>
             </div>
         </div>

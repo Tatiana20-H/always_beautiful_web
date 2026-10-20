@@ -2,7 +2,7 @@
 function asegurarCamposUsuario($conexion) {
     $campos = [
         'fecha_nacimiento' => "ALTER TABLE usuarios ADD COLUMN fecha_nacimiento DATE NULL",
-        'codigo_recuperacion' => "ALTER TABLE usuarios ADD COLUMN codigo_recuperacion VARCHAR(4) NULL",
+        'codigo_recuperacion' => "ALTER TABLE usuarios ADD COLUMN codigo_recuperacion VARCHAR(6) NULL",
         'codigo_expira' => "ALTER TABLE usuarios ADD COLUMN codigo_expira DATETIME NULL",
         'foto_perfil' => "ALTER TABLE usuarios ADD COLUMN foto_perfil VARCHAR(255) NULL",
         'genero' => "ALTER TABLE usuarios ADD COLUMN genero ENUM('hombre', 'mujer') NULL",
@@ -16,17 +16,43 @@ function asegurarCamposUsuario($conexion) {
             mysqli_query($conexion, $sql);
         }
     }
+
+    $codigo = mysqli_query($conexion, "SHOW COLUMNS FROM usuarios LIKE 'codigo_recuperacion'");
+    if ($codigo && ($columna = mysqli_fetch_assoc($codigo)) && stripos($columna['Type'], 'varchar(4)') === 0) {
+        mysqli_query($conexion, 'ALTER TABLE usuarios MODIFY codigo_recuperacion VARCHAR(6) NULL');
+    }
 }
 
 function enviarNotificacion($destinatario, $asunto, $mensaje) {
-    $remitente = getenv('ALWAYS_BEAUTIFUL_EMAIL');
-    if (!$remitente) {
-        return true;
+    $autoload = getenv('MAILER_AUTOLOAD') ?: '/opt/always-beautiful-vendor/autoload.php';
+    $usuarioCorreo = getenv('MAIL_USERNAME') ?: getenv('ALWAYS_BEAUTIFUL_EMAIL');
+    $claveCorreo = getenv('MAIL_PASSWORD');
+    if (!is_file($autoload) || !$usuarioCorreo || !$claveCorreo) {
+        error_log('Correo no enviado: configura MAIL_USERNAME y MAIL_PASSWORD para SMTP.');
+        return false;
     }
 
-    $cabeceras = "From: Always Beautiful <" . $remitente . ">\r\n";
-    $cabeceras .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    return @mail($destinatario, $asunto, $mensaje, $cabeceras);
+    require_once $autoload;
+    $correo = new PHPMailer\PHPMailer\PHPMailer(true);
+    try {
+        $correo->isSMTP();
+        $correo->Host = getenv('MAIL_HOST') ?: 'smtp.gmail.com';
+        $correo->SMTPAuth = true;
+        $correo->Username = $usuarioCorreo;
+        $correo->Password = $claveCorreo;
+        $correo->Port = (int) (getenv('MAIL_PORT') ?: 587);
+        $correo->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+        $correo->CharSet = 'UTF-8';
+        $correo->setFrom($usuarioCorreo, 'Always Beautiful');
+        $correo->addAddress($destinatario);
+        $correo->Subject = $asunto;
+        $correo->Body = $mensaje;
+        $correo->isHTML(false);
+        return $correo->send();
+    } catch (Throwable $error) {
+        error_log('Error enviando correo SMTP: ' . $error->getMessage());
+        return false;
+    }
 }
 
 function guardarDatosUsuario($conexion) {

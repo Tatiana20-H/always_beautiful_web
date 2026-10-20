@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Bogota');
 // Lee las variables del entorno de Docker o usa los valores por defecto del compose.yaml
 $dbHost = getenv('DB_HOST') ?: 'db';
 $dbPort = (int) (getenv('DB_PORT') ?: 3306);
@@ -55,6 +56,7 @@ if (!@mysqli_select_db($conexion, $dbName)) {
     }
 }
 mysqli_set_charset($conexion, 'utf8mb4');
+mysqli_query($conexion, "SET time_zone = '-05:00'");
 
 $tablaUsuarios = mysqli_query($conexion, "SHOW TABLES LIKE 'usuarios'");
 if (!$tablaUsuarios || mysqli_num_rows($tablaUsuarios) === 0) {
@@ -154,49 +156,52 @@ mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS reportes_reseñas (
 ) ENGINE=InnoDB");
 
 function ensureAdminUser($conexion) {
-    $administradores = [
-        ['nombre' => 'Tatianaadmin', 'correo' => 'Tatianaadmin@gmail.com', 'contrasena' => '123456'],
-        ['nombre' => 'antonioadmin', 'correo' => 'antonioadmin@gmail.com', 'contrasena' => '123456'],
-        ['nombre' => 'Admin', 'correo' => 'admin@gmail.com', 'contrasena' => '123456'],
-    ];
+    $correoAdmin = 'tachiandrade79@gmail.com';
+    $nombreAdmin = 'Tachi Andrade';
+    mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS configuracion_admin (id TINYINT NOT NULL PRIMARY KEY, inicializado TINYINT(1) NOT NULL DEFAULT 0) ENGINE=InnoDB");
+    mysqli_query($conexion, "INSERT IGNORE INTO configuracion_admin (id, inicializado) VALUES (1, 0)");
+    $estado = mysqli_query($conexion, "SELECT inicializado FROM configuracion_admin WHERE id = 1");
+    $inicializarCredenciales = $estado && (int) mysqli_fetch_assoc($estado)['inicializado'] === 0;
+    mysqli_query($conexion, "UPDATE usuarios SET rol = 'usuario' WHERE rol = 'admin' AND LOWER(correo) <> 'tachiandrade79@gmail.com'");
+    $stmt = mysqli_prepare($conexion, 'SELECT id, nombre, correo, contrasena, rol FROM usuarios WHERE LOWER(correo) = ? LIMIT 1');
+    if (!$stmt) {
+        return;
+    }
 
-    foreach ($administradores as $administrador) {
-        $adminPasswordHash = password_hash($administrador['contrasena'], PASSWORD_BCRYPT);
-        $sql = "SELECT id, nombre, contrasena, rol FROM usuarios WHERE correo = ? LIMIT 1";
+    mysqli_stmt_bind_param($stmt, 's', $correoAdmin);
+    mysqli_stmt_execute($stmt);
+    $resultado = mysqli_stmt_get_result($stmt);
+    $admin = $resultado ? mysqli_fetch_assoc($resultado) : null;
+    mysqli_stmt_close($stmt);
 
-        if ($stmt = mysqli_prepare($conexion, $sql)) {
-            mysqli_stmt_bind_param($stmt, "s", $administrador['correo']);
-            mysqli_stmt_execute($stmt);
-            $result = mysqli_stmt_get_result($stmt);
-
-            if ($result && $result->num_rows > 0) {
-                $admin = $result->fetch_assoc();
-                $adminId = (int) $admin['id'];
-                $needsUpdate = $admin['nombre'] !== $administrador['nombre']
-                    || $admin['rol'] !== 'admin'
-                    || !is_string($admin['contrasena'])
-                    || !password_verify($administrador['contrasena'], $admin['contrasena'])
-                    || password_needs_rehash($admin['contrasena'], PASSWORD_BCRYPT);
-
-                if ($needsUpdate) {
-                    $sqlUpdate = "UPDATE usuarios SET nombre = ?, contrasena = ?, rol = 'admin' WHERE id = ?";
-                    if ($update = mysqli_prepare($conexion, $sqlUpdate)) {
-                        mysqli_stmt_bind_param($update, "ssi", $administrador['nombre'], $adminPasswordHash, $adminId);
-                        mysqli_stmt_execute($update);
-                        mysqli_stmt_close($update);
-                    }
-                }
-            } else {
-                $sqlInsert = "INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (?, ?, ?, 'admin')";
-                if ($insert = mysqli_prepare($conexion, $sqlInsert)) {
-                    mysqli_stmt_bind_param($insert, "sss", $administrador['nombre'], $administrador['correo'], $adminPasswordHash);
-                    mysqli_stmt_execute($insert);
-                    mysqli_stmt_close($insert);
-                }
+    if ($admin) {
+        if ($inicializarCredenciales) {
+            $hashAdmin = password_hash('123456', PASSWORD_BCRYPT);
+            $actualizar = mysqli_prepare($conexion, "UPDATE usuarios SET nombre = ?, correo = ?, contrasena = ?, rol = 'admin' WHERE id = ?");
+            if ($actualizar) {
+                mysqli_stmt_bind_param($actualizar, 'sssi', $nombreAdmin, $correoAdmin, $hashAdmin, $admin['id']);
+                mysqli_stmt_execute($actualizar);
+                mysqli_stmt_close($actualizar);
             }
-
-            mysqli_stmt_close($stmt);
+        } elseif ($admin['rol'] !== 'admin' || $admin['nombre'] !== $nombreAdmin || $admin['correo'] !== $correoAdmin) {
+            $actualizar = mysqli_prepare($conexion, "UPDATE usuarios SET nombre = ?, correo = ?, rol = 'admin' WHERE id = ?");
+            if ($actualizar) {
+                mysqli_stmt_bind_param($actualizar, 'ssi', $nombreAdmin, $correoAdmin, $admin['id']);
+                mysqli_stmt_execute($actualizar);
+                mysqli_stmt_close($actualizar);
+            }
         }
+        if ($inicializarCredenciales) mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1 WHERE id = 1");
+        return;
+    }
+
+    $hashAdmin = password_hash('123456', PASSWORD_BCRYPT);
+    $insertar = mysqli_prepare($conexion, "INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (?, ?, ?, 'admin')");
+    if ($insertar) {
+        mysqli_stmt_bind_param($insertar, 'sss', $nombreAdmin, $correoAdmin, $hashAdmin);
+        $insertado = mysqli_stmt_execute($insertar);
+        mysqli_stmt_close($insertar);
+        if ($insertado) mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1 WHERE id = 1");
     }
 }
 
@@ -266,7 +271,6 @@ mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS respuestas_mensajes (
     FOREIGN KEY (mensaje_id) REFERENCES mensajes_contacto(id) ON DELETE CASCADE,
     FOREIGN KEY (admin_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB");
-
 mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS galeria_inicio (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,

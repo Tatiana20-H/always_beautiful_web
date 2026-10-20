@@ -3,89 +3,28 @@ session_start();
 include("header.php");
 ?>
 
-<link rel="stylesheet" href="styles.css">
-
-<style>
-.articulo-container{
-    max-width: 800px;
-    margin: 50px auto;
-    background: #ffe6f0;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-.articulo-container h2{
-    color: #b8869a;
-    margin-bottom: 20px;
-}
-
-.articulo-container img{
-    width: 100%;
-    border-radius: 15px;
-    margin-bottom: 20px;
-}
-
-.articulo-container p{
-    color: #555;
-    line-height: 1.8;
-    margin-bottom: 15px;
-}
-
-.pasos{
-    background: white;
-    padding: 20px;
-    border-radius: 15px;
-    margin-top: 20px;
-}
-
-.pasos h3{
-    color: #b8869a;
-    margin-bottom: 10px;
-}
-</style>
-
-<link rel="stylesheet" href="styles.css">
-
-<div class="articulo-container">
-
-    <h2>Cuidado del cabello </h2>
-
-    <img src="IMG/blog3.jpg">
-
-    <p>
-        Mantener tu cabello sano y brillante es clave para lucir una apariencia cuidada y hermosa.
-        Con algunos hábitos sencillos puedes mejorar su salud y aspecto.
-    </p>
-
-    <p>
-        Sigue estos consejos básicos para el cuidado diario de tu cabello:
-    </p>
-
-    <div class="pasos">
-
-        <h3> Paso 1: Lavado adecuado</h3>
-        <p>Utiliza un shampoo y acondicionador acorde a tu tipo de cabello y evita lavarlo en exceso.</p>
-
-        <h3>Paso 2: Hidratación</h3>
-        <p>Aplica mascarillas o tratamientos hidratantes al menos una vez por semana.</p>
-
-        <h3> Paso 3: Protección térmica</h3>
-        <p>Usa protector térmico antes de usar planchas o secadores para evitar daños.</p>
-
-        <h3> Paso 4: Corte regular</h3>
-        <p>Corta las puntas cada cierto tiempo para evitar el cabello maltratado.</p>
-
-        <h3> Paso 5: Aceites naturales</h3>
-        <p>Aplica aceites como coco o argán para dar brillo y nutrición.</p>
-
+<main class="articulo-container">
+    <a class="articulo-volver" href="articulos.php"><span aria-hidden="true">←</span> Volver a artículos</a>
+    <header class="articulo-portada">
+        <p class="articulo-categoria">Cuidado del cabello</p>
+        <h1>Cuidado del cabello</h1>
+        <p class="articulo-bajada">Hábitos prácticos para lavar, acondicionar y proteger tu cabello cada semana.</p>
+        <img src="IMG/blog3.jpg" alt="Consejos de cuidado y peinado para el cabello">
+    </header>
+    <div class="articulo-cuerpo">
+        <p>Una rutina capilar útil empieza por conocer cómo se siente tu cabello y qué necesita. La frecuencia de lavado y los productos adecuados varían según el cuero cabelludo, la textura y el estilo de vida.</p>
+        <p>Haz cambios graduales y observa el resultado durante algunas semanas. Si notas irritación o una caída repentina, consulta a un profesional de salud.</p>
+        <section class="pasos" aria-label="Consejos para cuidar el cabello">
+            <details><summary><span>01</span>Lava según tus necesidades</summary><p>Masajea el cuero cabelludo con las yemas de los dedos y enjuaga bien. Ajusta la frecuencia de lavado a cómo se siente tu cuero cabelludo, no a una regla universal.</p></details>
+            <details><summary><span>02</span>Acondiciona medios y puntas</summary><p>Aplica acondicionador después del lavado, especialmente de medios a puntas. Desenreda con suavidad para reducir tirones cuando el cabello está húmedo.</p></details>
+            <details><summary><span>03</span>Reduce el daño por calor</summary><p>Deja secar al aire cuando puedas. Si utilizas secador o herramientas térmicas, mantén una temperatura moderada y usa un protector formulado para calor.</p></details>
+            <details><summary><span>04</span>Protege las puntas</summary><p>Evita peinados que tiren demasiado y recorta las puntas cuando lo necesites. Una funda suave y un cepillado cuidadoso pueden ayudar a evitar fricción innecesaria.</p></details>
+            <details><summary><span>05</span>Hidrata sin exceso</summary><p>Incorpora una mascarilla si tu cabello la necesita y sigue las instrucciones del producto. Los aceites pueden aportar suavidad, pero no sustituyen el acondicionador.</p></details>
+        </section>
+        <aside class="articulo-consejo"><strong>Rutina realista</strong><p>La mejor rutina es la que se adapta a tu cabello y puedes mantener sin esfuerzo.</p></aside>
+        <a class="articulo-volver articulo-volver-final" href="articulos.php">Explorar los otros artículos <span aria-hidden="true">→</span></a>
     </div>
-
-    <p>
-      Tip: Evita el uso excesivo de calor y productos químicos para mantener tu cabello fuerte y saludable.
-    </p>
-
-</div>
+</main>
 
 </body>
 </html>

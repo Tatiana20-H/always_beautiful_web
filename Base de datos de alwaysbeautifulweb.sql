@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     contrasena VARCHAR(255) NOT NULL,
     fecha_nacimiento DATE NULL,
     genero ENUM('hombre', 'mujer') NULL,
-    codigo_recuperacion VARCHAR(4) NULL,
+    codigo_recuperacion VARCHAR(6) NULL,
     codigo_expira DATETIME NULL,
     rol ENUM('usuario', 'admin') NOT NULL DEFAULT 'usuario',
     foto_perfil VARCHAR(255) NULL,

@@ -4,6 +4,7 @@ target/
 api-auth/target/
 *.class
 always-beautiful/
+.env
 # IDE and system files
 .idea/
 *.iml

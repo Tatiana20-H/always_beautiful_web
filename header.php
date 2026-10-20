@@ -12,6 +12,20 @@ $notificacion = $_SESSION['notificacion'] ?? null;
 if ($notificacion) {
     unset($_SESSION['notificacion']);
 }
+$respuestasSinLeer = 0;
+if (!empty($_SESSION['usuario_id']) && isset($GLOBALS['conexion'])) {
+    require_once __DIR__ . '/migracion_respuestas_leidas.php';
+    $stmtRespuestasSinLeer = mysqli_prepare($GLOBALS['conexion'], "SELECT COUNT(*) FROM respuestas_mensajes r JOIN mensajes_contacto m ON m.id = r.mensaje_id WHERE r.visto_usuario = 0 AND (m.usuario_id = ? OR (m.usuario_id IS NULL AND m.correo = ?))");
+    if ($stmtRespuestasSinLeer) {
+        $usuarioActualId = (int) $_SESSION['usuario_id'];
+        $correoActual = (string) ($_SESSION['correo'] ?? '');
+        mysqli_stmt_bind_param($stmtRespuestasSinLeer, 'is', $usuarioActualId, $correoActual);
+        mysqli_stmt_execute($stmtRespuestasSinLeer);
+        mysqli_stmt_bind_result($stmtRespuestasSinLeer, $respuestasSinLeer);
+        mysqli_stmt_fetch($stmtRespuestasSinLeer);
+        mysqli_stmt_close($stmtRespuestasSinLeer);
+    }
+}
 ?>
 
 <header class="header">
@@ -80,6 +94,7 @@ if ($notificacion) {
                 <div class="perfil-submenu">
                     <strong><?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario') ?></strong>
                     <a href="perfil.php">Mi cuenta</a>
+                    <a href="mis_respuestas.php">Bandeja de respuestas<?php if ($respuestasSinLeer > 0): ?> <span class="contador-respuestas"><?= (int) $respuestasSinLeer ?></span><?php endif; ?></a>
                     <a href="logout.php">Cerrar sesión</a>
                 </div>
             </div>
@@ -145,13 +160,8 @@ if(isset($_SESSION['carrito'])){
         <div class="auth-panel" data-auth-panel="login">
             <h2>Inicia sesión para continuar</h2>
             <form action="login.php" method="POST" autocomplete="on">
-                <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
                 <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false">&#128065;</button></div>
-                <select name="rol" required>
-                    <option value="usuario">Usuario</option>
-                    <option value="admin">Administrador</option>
-                </select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
