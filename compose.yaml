@@ -24,10 +24,18 @@ services:
       DB_USER: root
       DB_PASSWORD: ""
       DB_NAME: alwaysbeautifuldb
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
       MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      APP_URL: "${APP_URL:-http://localhost:8080}"
+      WOMPI_PUBLIC_KEY: "${WOMPI_PUBLIC_KEY:-}"
+      WOMPI_PRIVATE_KEY: "${WOMPI_PRIVATE_KEY:-}"
+      WOMPI_INTEGRITY_SECRET: "${WOMPI_INTEGRITY_SECRET:-}"
+      WOMPI_EVENTS_SECRET: "${WOMPI_EVENTS_SECRET:-}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
 
   db:
     image: mariadb:11.4

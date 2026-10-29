@@ -2,6 +2,9 @@
 session_start();
 include __DIR__ . '/conexion.php';
 $conexion = $GLOBALS['conexion'];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    unset($_SESSION['correo_recuperacion']);
+}
 $mensaje = '';
 $error = false;
 $correoFormulario = trim((string) ($_POST['correo'] ?? $_SESSION['correo_recuperacion'] ?? ''));
@@ -13,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accion === 'enviar_codigo') {
         $correoFormulario = strtolower(trim((string) ($_POST['correo'] ?? '')));
         if (!filter_var($correoFormulario, FILTER_VALIDATE_EMAIL)) {
+            unset($_SESSION['correo_recuperacion']);
             $mensaje = 'Escribe un correo válido.';
             $error = true;
         } else {
@@ -23,7 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mysqli_stmt_close($stmt);
 
             if (!$usuario) {
-                $mensaje = 'No encontramos una cuenta con ese correo.';
+                unset($_SESSION['correo_recuperacion']);
+                $mensaje = 'El correo no está registrado.';
                 $error = true;
             } else {
                 $codigo = (string) random_int(100000, 999999);
@@ -36,8 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($guardado && enviarNotificacion($correoFormulario, 'Código de recuperación - Always Beautiful', "Tu código de recuperación es: $codigo. Vence en 15 minutos.")) {
                     $_SESSION['correo_recuperacion'] = $correoFormulario;
                     $mostrarCodigo = true;
-                    $mensaje = 'Enviamos un código de 6 dígitos a tu correo. Revisa también la carpeta de spam.';
+                    $mensaje = 'Enviamos un código de 6 dígitos a tu correo.';
                 } else {
+                    unset($_SESSION['correo_recuperacion']);
                     mysqli_query($conexion, "UPDATE usuarios SET codigo_recuperacion = NULL, codigo_expira = NULL WHERE id = $usuarioId");
                     $mensaje = 'No fue posible enviar el código. El correo SMTP no está configurado o el servicio rechazó el envío.';
                     $error = true;
@@ -53,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensaje = 'Escribe el código de seis dígitos enviado a tu correo.';
             $error = true;
             $mostrarCodigo = true;
-        } elseif (strlen($nuevaPassword) < 6 || strlen($nuevaPassword) > 72) {
-            $mensaje = 'La contraseña debe tener entre 6 y 72 caracteres.';
+        } elseif (strlen($nuevaPassword) < 8 || strlen($nuevaPassword) > 16) {
+            $mensaje = 'La contraseña debe tener entre 8 y 16 caracteres.';
             $error = true;
             $mostrarCodigo = true;
         } elseif (!hash_equals($nuevaPassword, $confirmarPassword)) {
@@ -74,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mostrarCodigo = false;
                 unset($_SESSION['correo_recuperacion']);
             } else {
-                $hash = password_hash($nuevaPassword, PASSWORD_BCRYPT);
+                $hash = password_hash($nuevaPassword, PASSWORD_DEFAULT);
                 $usuarioId = (int) $usuario['id'];
                 $stmt = mysqli_prepare($conexion, 'UPDATE usuarios SET contrasena = ?, codigo_recuperacion = NULL, codigo_expira = NULL WHERE id = ?');
                 mysqli_stmt_bind_param($stmt, 'si', $hash, $usuarioId);
@@ -82,8 +88,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 mysqli_stmt_close($stmt);
                 if ($actualizado) {
                     unset($_SESSION['correo_recuperacion']);
-                    $correoFormulario = '';
-                    $mensaje = 'Contraseña actualizada. Ya puedes iniciar sesión con tu correo y la nueva contraseña.';
+                    $_SESSION['notificacion'] = [
+                        'tipo' => 'verde',
+                        'mensaje' => 'Contraseña actualizada. Ya puedes iniciar sesión con tu correo y la nueva contraseña.',
+                        'modo' => 'login',
+                    ];
+                    header('Location: inicio.php');
+                    exit();
                 } else {
                     $mensaje = 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
                     $error = true;
@@ -143,13 +154,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php else: ?>
         <form method="POST" autocomplete="off">
             <input type="hidden" name="accion" value="cambiar_password">
-            <p class="recuperacion-cuenta">Código para <strong><?= htmlspecialchars($correoFormulario, ENT_QUOTES, 'UTF-8') ?></strong></p>
             <label for="codigo-recuperacion">Código de 6 dígitos</label>
             <input id="codigo-recuperacion" type="text" name="codigo" placeholder="000000" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
             <label for="nueva-password">Nueva contraseña</label>
-            <input id="nueva-password" type="password" name="nueva_password" placeholder="Mínimo 6 caracteres" minlength="6" maxlength="72" autocomplete="new-password" required>
+            <input id="nueva-password" type="password" name="nueva_password" placeholder="De 8 a 16 caracteres" minlength="8" maxlength="16" autocomplete="new-password" required>
             <label for="confirmar-password">Confirmar contraseña</label>
-            <input id="confirmar-password" type="password" name="confirmar_password" placeholder="Repite la contraseña" minlength="6" maxlength="72" autocomplete="new-password" required>
+            <input id="confirmar-password" type="password" name="confirmar_password" placeholder="Repite la contraseña" minlength="8" maxlength="16" autocomplete="new-password" required>
             <button type="submit">Cambiar contraseña</button>
         </form>
         <form method="POST" class="recuperacion-secundario">

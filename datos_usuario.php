@@ -4,6 +4,9 @@ function asegurarCamposUsuario($conexion) {
         'fecha_nacimiento' => "ALTER TABLE usuarios ADD COLUMN fecha_nacimiento DATE NULL",
         'codigo_recuperacion' => "ALTER TABLE usuarios ADD COLUMN codigo_recuperacion VARCHAR(6) NULL",
         'codigo_expira' => "ALTER TABLE usuarios ADD COLUMN codigo_expira DATETIME NULL",
+        'correo_verificado' => "ALTER TABLE usuarios ADD COLUMN correo_verificado TINYINT(1) NOT NULL DEFAULT 1",
+        'codigo_verificacion' => "ALTER TABLE usuarios ADD COLUMN codigo_verificacion VARCHAR(6) NULL",
+        'verificacion_expira' => "ALTER TABLE usuarios ADD COLUMN verificacion_expira DATETIME NULL",
         'foto_perfil' => "ALTER TABLE usuarios ADD COLUMN foto_perfil VARCHAR(255) NULL",
         'genero' => "ALTER TABLE usuarios ADD COLUMN genero ENUM('hombre', 'mujer') NULL",
         'carrito_json' => "ALTER TABLE usuarios ADD COLUMN carrito_json LONGTEXT NULL",
@@ -53,6 +56,15 @@ function enviarNotificacion($destinatario, $asunto, $mensaje) {
         error_log('Error enviando correo SMTP: ' . $error->getMessage());
         return false;
     }
+}
+
+function correoAdministradorNotificaciones() {
+    return getenv('ALWAYS_BEAUTIFUL_EMAIL') ?: getenv('MAIL_USERNAME') ?: 'tachiandrade79@gmail.com';
+}
+
+function urlAplicacion($ruta = '') {
+    $base = rtrim((string) (getenv('APP_URL') ?: 'http://localhost:8080'), '/');
+    return $base . '/' . ltrim((string) $ruta, '/');
 }
 
 function guardarDatosUsuario($conexion) {

@@ -7,10 +7,10 @@ $mensaje_error = "";
 
 // Procesar envío de formulario
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar_mensaje'])) {
-    $nombre = trim(mysqli_real_escape_string($conexion, $_POST['nombre'] ?? ''));
-    $correo = trim(mysqli_real_escape_string($conexion, $_POST['correo'] ?? ''));
-    $asunto = trim(mysqli_real_escape_string($conexion, $_POST['asunto'] ?? ''));
-    $mensaje = trim(mysqli_real_escape_string($conexion, $_POST['mensaje'] ?? ''));
+    $nombre = trim((string) ($_POST['nombre'] ?? ''));
+    $correo = trim((string) ($_POST['correo'] ?? ''));
+    $asunto = trim((string) ($_POST['asunto'] ?? ''));
+    $mensaje = trim((string) ($_POST['mensaje'] ?? ''));
     $usuario_id = isset($_SESSION['usuario_id']) ? $_SESSION['usuario_id'] : NULL;
 
     // Validar campos
@@ -31,14 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar_mensaje'])) {
                 // Limpiar formulario
                 $_POST = array();
                 
-                // Intentar enviar email (si está configurado)
-                $email_asunto = "Hemos recibido tu mensaje - Always Beautiful";
-                $email_cuerpo = "Hola $nombre,\n\n¡Gracias por contactarnos! Hemos recibido tu mensaje y nos pondremos en contacto pronto.\n\nAsunto: $asunto\n\nSaludos,\nEquipo Always Beautiful";
-                $email_headers = "From: AdminAlways@gmail.com\r\n";
-                $email_headers .= "Reply-To: AdminAlways@gmail.com\r\n";
-                $email_headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                
-                @mail($correo, $email_asunto, $email_cuerpo, $email_headers);
+                $urlBandejaAdmin = urlAplicacion('/Administrador/mensajes.php?filtro=no_leido');
+                $avisoAdmin = "Hay un nuevo mensaje en Always Beautiful.\n\nNombre: $nombre\nCorreo registrado: $correo\nAsunto: $asunto\n\nMensaje:\n$mensaje\n\nBandeja de administración:\n$urlBandejaAdmin";
+                enviarNotificacion(correoAdministradorNotificaciones(), "Nuevo mensaje de $nombre - Always Beautiful", $avisoAdmin);
+
+                $urlBandejaUsuario = urlAplicacion('/mis_respuestas.php');
+                $urlRegistro = urlAplicacion('/registro.php');
+                $confirmacion = "Hola $nombre,\n\nRecibimos tu mensaje sobre: $asunto. El equipo de Always Beautiful te responderá pronto.\n\nConsulta o responde desde:\n$urlBandejaUsuario\n\nSi aún no tienes cuenta, regístrate usando este mismo correo para vincular la conversación:\n$urlRegistro\n\nSaludos,\nEquipo Always Beautiful";
+                enviarNotificacion($correo, 'Recibimos tu mensaje - Always Beautiful', $confirmacion);
             } else {
                 $mensaje_error = "Error al enviar el mensaje. Intenta de nuevo.";
             }
@@ -96,6 +96,7 @@ if ($usuario_logueado) {
                     <a href="Accesorios.php">Accesorios</a>
                     <a href="cabello.php">Cuidado del cabello</a>
                     <a href="piel.php">Cuidado de la piel</a>
+                                    <a href="perfumes.php">Perfumes</a>
                 </div>
             </div>
             <div class="item dropdown modulo-nosotros">
@@ -157,8 +158,8 @@ if ($usuario_logueado) {
                 <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="off" required>
                 <input type="date" name="fecha_nacimiento" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
                 <button type="submit">Crear cuenta</button>
             </form>
         </div>
@@ -168,6 +169,10 @@ if ($usuario_logueado) {
             <form action="login.php" method="POST" autocomplete="on">
                 <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
                 <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+                <select name="rol" aria-label="Rol de inicio de sesión" required>
+                    <option value="usuario">Usuario</option>
+                    <option value="admin">Administrador</option>
+                </select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
@@ -407,5 +412,6 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
     </form>
 </div>
 
+<?php include __DIR__ . '/footer.php'; ?>
 </body>
 </html>

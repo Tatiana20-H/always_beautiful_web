@@ -9,6 +9,13 @@ El proyecto usa dos contenedores: Apache/PHP y MySQL. Docker publica Apache en l
 - IP invitado: dejar vacía
 - Puerto invitado: `80`
 
+Para entrar por `http://localhost:8080/` desde Windows, crea también esta segunda regla NAT:
+
+- Protocolo: `TCP`
+- Puerto del anfitrión: `8080`
+- IP invitado: dejar vacía
+- Puerto invitado: `8080`
+
 Después de iniciar la máquina virtual, ejecuta desde esta carpeta:
 
 ```bash
@@ -50,14 +57,30 @@ SELECT usuario_id, producto_id, COUNT(*) FROM carrito GROUP BY usuario_id, produ
 
 Docker ejecuta el esquema automáticamente al crear por primera vez el volumen `db_data`. El volumen activo de este workspace ya contiene el esquema actualizado; no es necesario borrar ni reinicializarlo.
 
-Abre en Windows `http://localhost/` o `http://localhost:8080/`. Para Live Share, comparte el puerto `80` desde VS Code y tu compañero debe abrir la URL que Live Share le proporcione. La base de datos se conserva en el volumen `db_data` y Compose espera a que MySQL esté listo antes de iniciar la web.
+Abre en Windows `http://localhost/` o `http://localhost:8080/` (este último requiere la segunda regla NAT indicada arriba). En la VM, ambos puertos los publica Docker hacia Apache en el puerto `80` del contenedor. Para Live Share, comparte el puerto `80` desde VS Code y tu compañero debe abrir la URL que Live Share le proporcione. La base de datos se conserva en el volumen `db_data` y Compose espera a que MySQL esté listo antes de iniciar la web.
 
 El mismo formulario de inicio de sesión sirve para ambos roles:
 
 - Usuario: correo y contraseña de la cuenta registrada.
-- Administrador: `Tatianaadmin@gmail.com` con contraseña `123456`.
+- Administrador: `tachiandrade79@gmail.com` con la clave definida en `ADMIN_INITIAL_PASSWORD`.
 
 Al iniciar sesión con el rol `admin`, la aplicación redirige automáticamente a `Administrador/index.php`.
+
+## Seguridad de cuentas
+
+Las contraseñas nuevas se guardan como hashes con `password_hash`; no se cifran de forma reversible. Al iniciar sesión, las contraseñas antiguas almacenadas en texto plano se convierten automáticamente a hash si coinciden. No se crean cuentas demo con claves públicas.
+
+Antes de arrancar, copia `.env.example` a `.env` y define `ADMIN_INITIAL_PASSWORD` con una clave propia de 12 a 72 caracteres. No publiques ni compartas `.env`. En la primera conexión, el sistema asigna esa clave al administrador `tachiandrade79@gmail.com` y marca la inicialización para no volver a reemplazarla; en una base existente también se hace una sola vez.
+
+Configura `APP_URL` con la URL pública del sitio (por ejemplo, `https://tudominio.com`) para que los enlaces de los correos permitan al administrador y a los usuarios abrir sus bandejas desde fuera del equipo local. En esta configuración local usa `http://localhost:8080` o `http://localhost`.
+
+## Pagos de prueba con Stripe
+
+Define `STRIPE_SECRET_KEY` en `.env` con una clave de prueba `sk_test_` o una clave restringida de prueba `rk_test_` de Stripe. Si usas `rk_test_`, asígnale permisos de escritura para Checkout Sessions y los permisos que exija Stripe para crear y consultar esas sesiones. El checkout utiliza tarjetas de prueba; no configures una clave `sk_live_` ni `rk_live_`. Para el sitio local, usa `APP_URL=http://localhost:8080` o `http://localhost`; en producción, reemplázala por la URL HTTPS pública. Para confirmar pagos aunque el comprador no regrese al sitio, configura un webhook de prueba dirigido a `/stripe_eventos.php` para los eventos `checkout.session.completed` y `checkout.session.async_payment_succeeded`, y guarda su firma `whsec_` en `STRIPE_WEBHOOK_SECRET`. Después de editar `.env`, recrea el servicio web con `docker compose up -d --force-recreate web` para que Docker cargue las variables.
+
+Para simular una compra con tarjeta en Checkout usa `4242 4242 4242 4242`, cualquier fecha futura y cualquier CVC de tres dígitos. Es una tarjeta ficticia de prueba, no un número de cuenta bancaria; el sitio no solicita ni acepta cuentas bancarias en este flujo.
+
+Este cambio protege las contraseñas. Los datos personales de las filas de `usuarios` (por ejemplo, nombre, correo, fecha de nacimiento y género) siguen siendo consultables en la base de datos para que funcionen las búsquedas y el inicio de sesión. Para protegerlos ante el robo de archivos o discos, cifra el almacenamiento/volumen de MariaDB y sus copias de seguridad; el cifrado de contraseñas por sí solo no cifra esas columnas.
 
 ## Qué se mantiene
 - Archivos PHP y recursos web: la mayor parte del sitio se encuentra en la raíz y en `Administrador/`.

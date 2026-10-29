@@ -1,6 +1,7 @@
 <?php
 include("Seguridad.php");
 include("../conexion.php");
+$conexion = $GLOBALS['conexion'];
 require_once __DIR__ . '/../migracion_respuestas_leidas.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -51,23 +52,17 @@ if ($stmt = mysqli_prepare($conexion, $sql_insert)) {
             mysqli_stmt_close($stmtEstado);
         }
         
-        // Enviar email al usuario
-        $email_asunto = "Re: " . htmlspecialchars($mensaje_original['asunto']) . " - Always Beautiful";
-        $email_cuerpo = "Hola " . htmlspecialchars($mensaje_original['nombre']) . ",\n\n";
-        $email_cuerpo .= "El administrador ha respondido a tu mensaje:\n\n";
-        $email_cuerpo .= "--- RESPUESTA DEL ADMINISTRADOR ---\n";
-        $email_cuerpo .= $respuesta . "\n";
-        $email_cuerpo .= "--- FIN DE RESPUESTA ---\n\n";
-        $email_cuerpo .= "Puedes ver tu respuesta completa en tu perfil en nuestro sitio.\n\n";
-        $email_cuerpo .= "Saludos,\nEquipo Always Beautiful";
-        
-        $email_headers = "From: AdminAlways@gmail.com\r\n";
-        $email_headers .= "Reply-To: AdminAlways@gmail.com\r\n";
-        $email_headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-        
-        @mail($mensaje_original['correo'], $email_asunto, $email_cuerpo, $email_headers);
-        
-        $_SESSION['exito'] = "Respuesta enviada con éxito al usuario.";
+        $urlBandejaUsuario = urlAplicacion('/mis_respuestas.php');
+        $emailCuerpo = "Hola " . $mensaje_original['nombre'] . ",\n\n";
+        $emailCuerpo .= "El administrador respondió a tu mensaje sobre: " . $mensaje_original['asunto'] . "\n\n";
+        $emailCuerpo .= "Respuesta:\n$respuesta\n\n";
+        $emailCuerpo .= "Entra a Always Beautiful para continuar la conversación:\n$urlBandejaUsuario\n\n";
+        $emailCuerpo .= "Saludos,\nEquipo Always Beautiful";
+        $emailEnviado = enviarNotificacion($mensaje_original['correo'], 'El administrador respondió - Always Beautiful', $emailCuerpo);
+
+        $_SESSION['exito'] = $emailEnviado
+            ? "Respuesta guardada y aviso enviado al correo del usuario."
+            : "Respuesta guardada en la página, pero no se pudo enviar el aviso por correo. Revisa la configuración SMTP.";
     } else {
         $_SESSION['error'] = "Error al enviar la respuesta.";
     }

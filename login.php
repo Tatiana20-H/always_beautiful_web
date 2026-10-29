@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // Obtener y limpiar datos
 $correo = trim($_POST['correo'] ?? '');
 $password = $_POST['password'] ?? '';
+$rolSolicitado = strtolower(trim((string) ($_POST['rol'] ?? '')));
 
 // Validaciones básicas
 $errores = [];
@@ -23,7 +24,9 @@ if (empty($correo) || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
 if (empty($password)) {
     $errores[] = "La contraseña es requerida";
 }
-
+if (!in_array($rolSolicitado, ['usuario', 'admin'], true)) {
+    $errores[] = 'Selecciona un rol válido.';
+}
 function redirectWithLoginErrors(array $errors, array $oldData = []) {
     $_SESSION['errores_login'] = $errors;
     $_SESSION['old_login'] = $oldData;
@@ -39,11 +42,12 @@ function redirectWithLoginErrors(array $errors, array $oldData = []) {
 if (!empty($errores)) {
     redirectWithLoginErrors($errores, [
         'correo' => $correo,
+        'rol' => $rolSolicitado,
     ]);
 }
 
 // Consultar usuario con prepared statement
-$sql = "SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil FROM usuarios WHERE LOWER(correo) = LOWER(?) LIMIT 1";
+$sql = "SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil, correo_verificado FROM usuarios WHERE LOWER(correo) = LOWER(?) LIMIT 1";
 $stmt = $conexion->prepare($sql);
 
 if (!$stmt) {
@@ -59,13 +63,39 @@ $resultado = $stmt->get_result();
 if ($resultado->num_rows > 0) {
     $usuario = $resultado->fetch_assoc();
     $rolUsuario = strtolower(trim((string) ($usuario['rol'] ?? 'usuario')));
-    
-    // Verificar contraseña encriptada
-    if (password_verify($password, $usuario['contrasena'])) {
+    $hashGuardado = (string) ($usuario['contrasena'] ?? '');
+    $contrasenaValida = password_verify($password, $hashGuardado);
+
+    if (!$contrasenaValida && password_get_info($hashGuardado)['algo'] === null && hash_equals($hashGuardado, $password)) {
+        $hashNuevo = password_hash($password, PASSWORD_DEFAULT);
+        $stmtMigracion = $conexion->prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?');
+        if ($stmtMigracion) {
+            $stmtMigracion->bind_param('si', $hashNuevo, $usuario['id']);
+            $contrasenaValida = $stmtMigracion->execute();
+            $stmtMigracion->close();
+        }
+    } elseif ($contrasenaValida && password_needs_rehash($hashGuardado, PASSWORD_DEFAULT)) {
+        $hashNuevo = password_hash($password, PASSWORD_DEFAULT);
+        $stmtMigracion = $conexion->prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?');
+        if ($stmtMigracion) {
+            $stmtMigracion->bind_param('si', $hashNuevo, $usuario['id']);
+            $stmtMigracion->execute();
+            $stmtMigracion->close();
+        }
+    }
+
+    if ($contrasenaValida) {
+
+        if (!(int) $usuario['correo_verificado']) {
+            $_SESSION['correo_verificacion'] = $usuario['correo'];
+            $_SESSION['aviso_verificacion'] = 'Verifica tu correo antes de iniciar sesión.';
+            header('Location: confirmacion_registro.php');
+            exit();
+        }
 
         $esCorreoAdministrador = strcasecmp(trim($usuario['correo']), 'tachiandrade79@gmail.com') === 0;
-        if (($esCorreoAdministrador && $rolUsuario !== 'admin') || (!$esCorreoAdministrador && $rolUsuario === 'admin')) {
-            redirectWithLoginErrors(["La cuenta administrativa no está configurada correctamente."], ['correo' => $correo]);
+        if (($esCorreoAdministrador && $rolUsuario !== 'admin') || (!$esCorreoAdministrador && $rolUsuario === 'admin') || $rolSolicitado !== $rolUsuario) {
+            redirectWithLoginErrors(['No se pudo validar el tipo de cuenta.'], ['correo' => $correo]);
         }
         
         // Login exitoso - guardar sesión

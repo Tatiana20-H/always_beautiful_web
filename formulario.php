@@ -1,7 +1,13 @@
 <?php 
 session_start();
+if (strtolower((string) ($_SESSION['rol'] ?? '')) === 'admin') {
+    header('Location: Administrador/index.php');
+    exit();
+}
 include("conexion.php");
 $conexion = $GLOBALS['conexion'];
+$correoAdministrador = correoAdministradorNotificaciones();
+$enlaceGmailAdministrador = 'https://mail.google.com/mail/?view=cm&fs=1&to=' . rawurlencode($correoAdministrador) . '&su=' . rawurlencode('Consulta a Always Beautiful');
 
 // Obtener datos del usuario si está logueado
 $usuario_logueado = false;
@@ -57,6 +63,7 @@ if ($usuario_logueado) {
                     <a href="Accesorios.php">Accesorios</a>
                     <a href="cabello.php">Cuidado del cabello</a>
                     <a href="piel.php">Cuidado de la piel</a>
+                                    <a href="perfumes.php">Perfumes</a>
                 </div>
             </div>
             <div class="item dropdown modulo-nosotros">
@@ -118,8 +125,8 @@ if ($usuario_logueado) {
                 <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="off" required>
                 <input type="date" name="fecha_nacimiento" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
                 <button type="submit">Crear cuenta</button>
             </form>
         </div>
@@ -129,6 +136,10 @@ if ($usuario_logueado) {
             <form action="login.php" method="POST" autocomplete="on">
                 <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
                 <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+                <select name="rol" aria-label="Rol de inicio de sesión" required>
+                    <option value="usuario">Usuario</option>
+                    <option value="admin">Administrador</option>
+                </select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
@@ -214,10 +225,10 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
         <p class="contacto-eyebrow">Atención al cliente</p>
         <h1 id="titulo-contacto">Estamos aquí para ayudarte.</h1>
         <p>Cuéntanos qué necesitas y nuestro equipo revisará tu mensaje desde la bandeja de atención.</p>
-        <div class="contacto-destino">
+        <a class="contacto-destino" href="<?= htmlspecialchars($enlaceGmailAdministrador, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">
             <span class="contacto-destino-icono" aria-hidden="true">✉</span>
             <span><strong>Equipo Always Beautiful</strong><small>Recepción directa en administración</small></span>
-        </div>
+        </a>
     </section>
 
     <section class="contacto-formulario-columna" aria-label="Formulario de contacto">
@@ -259,7 +270,8 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
             <input id="contacto-asunto" type="text" name="asunto" maxlength="200" value="<?= htmlspecialchars($datos_pendientes['asunto'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="¿Sobre qué trata tu consulta?" required>
         </label>
 
-        <label class="contacto-campo" for="contacto-mensaje">Mensaje
+        <div class="contacto-campo">
+            <label for="contacto-mensaje">Mensaje</label>
             <div class="mensaje-contenedor">
                 <textarea id="contacto-mensaje" name="mensaje" rows="7" placeholder="Escribe aquí los detalles de tu consulta..." required><?= htmlspecialchars($datos_pendientes['mensaje'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                 <label class="foto-mensaje" title="Adjuntar una foto">
@@ -267,9 +279,16 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
                     <span>Adjuntar foto</span>
                     <input type="file" name="foto_mensaje" accept="image/jpeg,image/png,image/webp">
                 </label>
+                <div class="foto-mensaje-vista previa-oculta" id="foto-mensaje-vista" aria-live="polite" hidden>
+                    <img id="foto-mensaje-miniatura" alt="Vista previa de la foto adjunta">
+                    <div class="foto-mensaje-detalles">
+                        <span id="foto-mensaje-nombre"></span>
+                        <button type="button" id="foto-mensaje-quitar" aria-label="Quitar foto adjunta">Quitar</button>
+                    </div>
+                </div>
                 <span class="contacto-ayuda-archivo">JPG, PNG o WEBP, máximo 5 MB</span>
             </div>
-        </label>
+        </div>
 
         <button type="submit">
             Enviar mensaje <span aria-hidden="true">→</span>
@@ -278,5 +297,40 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
     </section>
 </main>
 
+<?php include __DIR__ . '/footer.php'; ?>
+<script>
+const campoFotoMensaje = document.querySelector('input[name="foto_mensaje"]');
+const vistaFotoMensaje = document.getElementById('foto-mensaje-vista');
+const miniaturaFotoMensaje = document.getElementById('foto-mensaje-miniatura');
+const nombreFotoMensaje = document.getElementById('foto-mensaje-nombre');
+const quitarFotoMensaje = document.getElementById('foto-mensaje-quitar');
+let urlVistaFotoMensaje = null;
+
+function limpiarVistaFotoMensaje() {
+    if (urlVistaFotoMensaje) {
+        URL.revokeObjectURL(urlVistaFotoMensaje);
+        urlVistaFotoMensaje = null;
+    }
+    miniaturaFotoMensaje.removeAttribute('src');
+    nombreFotoMensaje.textContent = '';
+    vistaFotoMensaje.hidden = true;
+}
+
+campoFotoMensaje?.addEventListener('change', function () {
+    limpiarVistaFotoMensaje();
+    const archivo = this.files?.[0];
+    if (!archivo || !archivo.type.startsWith('image/')) return;
+
+    urlVistaFotoMensaje = URL.createObjectURL(archivo);
+    miniaturaFotoMensaje.src = urlVistaFotoMensaje;
+    nombreFotoMensaje.textContent = archivo.name;
+    vistaFotoMensaje.hidden = false;
+});
+
+quitarFotoMensaje?.addEventListener('click', function () {
+    campoFotoMensaje.value = '';
+    limpiarVistaFotoMensaje();
+});
+</script>
 </body>
 </html>

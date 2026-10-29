@@ -7,11 +7,106 @@ if (!isset($_SESSION['usuario_id'])) {
     header("Location: inicio.php");
     exit();
 }
+$esAdministrador = strtolower((string) ($_SESSION['rol'] ?? '')) === 'admin';
 
 $tokenCsrf = $_SESSION['token_csrf_perfil'] ?? bin2hex(random_bytes(32));
 $_SESSION['token_csrf_perfil'] = $tokenCsrf;
 $mensajePerfil = '';
 $errorPerfil = false;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_cuenta'])) {
+    $tokenEnviado = $_POST['token_csrf'] ?? '';
+    $passwordConfirmacion = (string) ($_POST['password_eliminar'] ?? '');
+    $confirmacionExplicita = ($_POST['confirmar_eliminacion'] ?? '') === 'si';
+    $usuarioId = (int) $_SESSION['usuario_id'];
+
+    if (!is_string($tokenEnviado) || !hash_equals($tokenCsrf, $tokenEnviado)) {
+        $mensajePerfil = 'La sesión del formulario expiró. Recarga la página e inténtalo de nuevo.';
+        $errorPerfil = true;
+    } elseif (!$confirmacionExplicita || $passwordConfirmacion === '') {
+        $mensajePerfil = 'Confirma la eliminación e introduce tu contraseña actual.';
+        $errorPerfil = true;
+    } else {
+        mysqli_begin_transaction($conexion);
+        $stmtCuenta = mysqli_prepare($conexion, 'SELECT correo, contrasena, rol FROM usuarios WHERE id = ? FOR UPDATE');
+        if ($stmtCuenta) {
+            mysqli_stmt_bind_param($stmtCuenta, 'i', $usuarioId);
+            mysqli_stmt_execute($stmtCuenta);
+            $cuenta = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtCuenta));
+            mysqli_stmt_close($stmtCuenta);
+        } else {
+            $cuenta = null;
+        }
+
+        if (!$cuenta || strtolower((string) $cuenta['rol']) !== 'usuario') {
+            mysqli_rollback($conexion);
+            $mensajePerfil = 'No se pudo verificar una cuenta de usuario para eliminar.';
+            $errorPerfil = true;
+        } elseif (!password_verify($passwordConfirmacion, $cuenta['contrasena'])) {
+            mysqli_rollback($conexion);
+            $mensajePerfil = 'La contraseña actual es incorrecta.';
+            $errorPerfil = true;
+        } else {
+            $correoAnterior = $cuenta['correo'];
+            $correoAnonimo = 'eliminada-' . $usuarioId . '-' . bin2hex(random_bytes(8)) . '@cuentas.invalid';
+            $hashInutilizable = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+            $fotoAnterior = (string) ($_SESSION['foto_perfil'] ?? '');
+            $cambiosCuentaCorrectos = true;
+
+            $stmtMensajes = mysqli_prepare($conexion, 'DELETE FROM mensajes_contacto WHERE usuario_id = ? OR (usuario_id IS NULL AND LOWER(correo) = LOWER(?))');
+            if ($stmtMensajes) {
+                mysqli_stmt_bind_param($stmtMensajes, 'is', $usuarioId, $correoAnterior);
+                $cambiosCuentaCorrectos = mysqli_stmt_execute($stmtMensajes);
+                mysqli_stmt_close($stmtMensajes);
+            } else {
+                $cambiosCuentaCorrectos = false;
+            }
+
+            if ($cambiosCuentaCorrectos) {
+                $cambiosCuentaCorrectos = mysqli_query($conexion, 'DELETE FROM historial_actividades WHERE usuario_id = ' . $usuarioId)
+                    && mysqli_query($conexion, 'DELETE FROM carrito WHERE usuario_id = ' . $usuarioId)
+                    && mysqli_query($conexion, 'DELETE FROM votos_reseñas WHERE usuario_id = ' . $usuarioId)
+                    && mysqli_query($conexion, 'DELETE FROM reportes_reseñas WHERE usuario_id = ' . $usuarioId)
+                    && mysqli_query($conexion, "UPDATE reseñas_productos SET usuario_id = NULL, nombre_autor = 'Usuario eliminado' WHERE usuario_id = " . $usuarioId);
+            }
+
+            if ($cambiosCuentaCorrectos) {
+                $stmtAnonimizar = mysqli_prepare($conexion, 'UPDATE usuarios SET nombre = ?, correo = ?, contrasena = ?, fecha_nacimiento = NULL, genero = NULL, correo_verificado = 0, codigo_verificacion = NULL, verificacion_expira = NULL, codigo_recuperacion = NULL, codigo_expira = NULL, foto_perfil = NULL, carrito_json = NULL, historial_json = NULL, activo = 0 WHERE id = ?');
+                if ($stmtAnonimizar) {
+                    $nombreAnonimo = 'Cuenta eliminada';
+                    mysqli_stmt_bind_param($stmtAnonimizar, 'sssi', $nombreAnonimo, $correoAnonimo, $hashInutilizable, $usuarioId);
+                    $cambiosCuentaCorrectos = mysqli_stmt_execute($stmtAnonimizar);
+                    mysqli_stmt_close($stmtAnonimizar);
+                } else {
+                    $cambiosCuentaCorrectos = false;
+                }
+            }
+
+            if ($cambiosCuentaCorrectos && mysqli_commit($conexion)) {
+                if (strpos($fotoAnterior, 'IMG/perfiles/') === 0) {
+                    $archivoFotoAnterior = __DIR__ . '/IMG/perfiles/' . basename($fotoAnterior);
+                    if (is_file($archivoFotoAnterior)) {
+                        unlink($archivoFotoAnterior);
+                    }
+                }
+                $_SESSION = [];
+                session_regenerate_id(true);
+                $_SESSION['notificacion'] = [
+                    'tipo' => 'verde',
+                    'mensaje' => 'Tu cuenta fue eliminada. Ya puedes registrarte nuevamente con el mismo correo.',
+                    'modo' => 'register',
+                    'mantener_modal' => true
+                ];
+                header('Location: index.php');
+                exit();
+            }
+
+            mysqli_rollback($conexion);
+            $mensajePerfil = 'No se pudo eliminar la cuenta. No se guardaron los cambios; inténtalo de nuevo.';
+            $errorPerfil = true;
+        }
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cambiar_password'])) {
     $tokenEnviado = $_POST['token_csrf'] ?? '';
@@ -23,8 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cambiar_password'])) 
     if (!is_string($tokenEnviado) || !hash_equals($tokenCsrf, $tokenEnviado)) {
         $mensajePerfil = 'La sesión del formulario expiró. Recarga la página e inténtalo de nuevo.';
         $errorPerfil = true;
-    } elseif (strlen($passwordNueva) < 6 || strlen($passwordNueva) > 72) {
-        $mensajePerfil = 'La nueva contraseña debe tener entre 6 y 72 caracteres.';
+    } elseif (strlen($passwordNueva) < 8 || strlen($passwordNueva) > 16) {
+        $mensajePerfil = 'La nueva contraseña debe tener entre 8 y 16 caracteres.';
         $errorPerfil = true;
     } elseif (!hash_equals($passwordNueva, $passwordConfirmacion)) {
         $mensajePerfil = 'La nueva contraseña y su confirmación no coinciden.';
@@ -39,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cambiar_password'])) 
             $mensajePerfil = 'La contraseña actual es incorrecta.';
             $errorPerfil = true;
         } else {
-            $hashPassword = password_hash($passwordNueva, PASSWORD_BCRYPT);
+            $hashPassword = password_hash($passwordNueva, PASSWORD_DEFAULT);
             $stmtPassword = mysqli_prepare($conexion, 'UPDATE usuarios SET contrasena = ? WHERE id = ?');
             mysqli_stmt_bind_param($stmtPassword, 'si', $hashPassword, $usuarioId);
             $actualizadoPassword = mysqli_stmt_execute($stmtPassword);
@@ -165,7 +260,7 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Mi Perfil - Always Beautiful</title>
+<title><?= $esAdministrador ? 'Seguridad de la cuenta' : 'Mi Perfil' ?> - Always Beautiful</title>
 <link rel="stylesheet" href="styles.css">
 
 <style>
@@ -185,13 +280,25 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
 .foto-form { margin: 18px auto 28px; max-width: 420px; }
 .foto-form input { box-sizing: border-box; }
 .foto-form button { width: auto; background: var(--ab-brown); }
-.perfil-edicion { max-width: 560px; margin: 28px auto; padding: 22px; background: #fff; border: 1px solid var(--ab-sand); border-radius: 8px; text-align: left; }
-.perfil-edicion h3 { margin-top: 0; color: var(--ab-brown); }
+.perfil-edicion { max-width: 560px; margin: 18px auto; padding: 0 18px; background: #fff; border: 1px solid var(--ab-sand); border-radius: 8px; text-align: left; }
+.perfil-acordeon > summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 58px; color: var(--ab-brown); cursor: pointer; font-weight: 700; list-style: none; }
+.perfil-acordeon > summary::-webkit-details-marker { display: none; }
+.perfil-acordeon > summary::after { content: '+'; flex: 0 0 auto; color: var(--ab-terracotta); font-size: 22px; font-weight: 400; }
+.perfil-acordeon[open] > summary::after { content: '\2212'; }
+.perfil-acordeon[open] > summary { border-bottom: 1px solid var(--ab-sand); }
+.perfil-acordeon > form { padding: 8px 0 18px; }
 .perfil-campo { display: grid; gap: 6px; margin: 14px 0; color: var(--ab-mocha); font-size: 14px; font-weight: 600; }
 .perfil-campo input { box-sizing: border-box; width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--ab-sand); border-radius: 5px; color: var(--ab-dark-brown); font: inherit; }
 .perfil-campo input:focus { outline: 2px solid var(--ab-terracotta); outline-offset: 1px; }
 .perfil-aviso { margin: 14px auto; max-width: 560px; padding: 11px 14px; border-radius: 5px; background: #e8f4eb; color: #245b33; }
 .perfil-aviso.error { background: #fff0ed; color: #8b2f24; }
+.control-cuenta { max-width: 560px; margin: 18px auto; padding: 0 18px; background: #fff; border: 1px solid #e5b8ad; border-radius: 8px; text-align: left; }
+.control-cuenta > summary { color: #8b2f24; }
+.control-cuenta p { color: var(--ab-mocha); line-height: 1.5; }
+.control-cuenta .confirmar-eliminacion { display: flex; align-items: flex-start; gap: 9px; margin: 14px 0; color: var(--ab-mocha); font-size: 14px; }
+.control-cuenta .confirmar-eliminacion input { margin-top: 3px; }
+.btn-eliminar-cuenta { background: #8b2f24; }
+.btn-eliminar-cuenta:hover { background: #68231c; }
 .resumen-cuenta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 25px 0; }
 .resumen-cuenta div { background: #fff; border: 1px solid var(--ab-blush); border-radius: 10px; padding: 14px; color: var(--ab-mocha); }
 .historial-compra { border: 1px solid var(--ab-sand); background: rgba(255,255,255,0.72); color: var(--ab-dark-brown); padding: 15px; margin: 15px 0; border-radius: 10px; text-align: left; }
@@ -225,8 +332,9 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
 
 <div class="perfil-container">
 
-    <h2>Mi Perfil</h2>
+    <h2><?= $esAdministrador ? 'Seguridad de la cuenta' : 'Mi Perfil' ?></h2>
 
+    <?php if (!$esAdministrador): ?>
     <?php if (!empty($_SESSION['foto_perfil'])): ?>
         <img src="<?= htmlspecialchars($_SESSION['foto_perfil']) ?>" alt="Foto de perfil" class="foto-perfil">
     <?php else: ?>
@@ -250,8 +358,9 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
 
     <?php if ($mensajePerfil): ?><p class="perfil-aviso <?= $errorPerfil ? 'error' : '' ?>" role="status"><?= htmlspecialchars($mensajePerfil) ?></p><?php endif; ?>
 
-    <form action="perfil.php" method="POST" class="perfil-edicion">
-        <h3>Datos personales</h3>
+    <details class="perfil-acordeon perfil-edicion">
+        <summary>Datos personales</summary>
+        <form action="perfil.php" method="POST">
         <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCsrf, ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="actualizar_perfil" value="1">
         <label class="perfil-campo" for="nombre-perfil">Nombre
@@ -264,24 +373,48 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
             <input id="fecha-nacimiento-perfil" type="date" name="fecha_nacimiento" max="<?= date('Y-m-d') ?>" value="<?= htmlspecialchars($_POST['actualizar_perfil'] ?? '' ? ($_POST['fecha_nacimiento'] ?? '') : ($_SESSION['fecha_nacimiento'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" autocomplete="bday">
         </label>
         <button class="btn" type="submit">Guardar cambios</button>
-    </form>
+        </form>
+    </details>
+    <?php endif; ?>
 
-    <form action="perfil.php" method="POST" class="perfil-edicion" autocomplete="off">
-        <h3>Cambiar contraseña</h3>
+    <details class="perfil-acordeon perfil-edicion">
+        <summary>Cambiar contraseña</summary>
+        <form action="perfil.php" method="POST" autocomplete="off">
         <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCsrf, ENT_QUOTES, 'UTF-8') ?>">
         <input type="hidden" name="cambiar_password" value="1">
         <label class="perfil-campo" for="password-actual">Contraseña actual
             <input id="password-actual" type="password" name="password_actual" autocomplete="current-password" required>
         </label>
         <label class="perfil-campo" for="password-nueva">Nueva contraseña
-            <input id="password-nueva" type="password" name="password_nueva" minlength="6" maxlength="72" autocomplete="new-password" required>
+            <input id="password-nueva" type="password" name="password_nueva" minlength="8" maxlength="16" autocomplete="new-password" required>
         </label>
         <label class="perfil-campo" for="password-confirmacion">Confirmar nueva contraseña
-            <input id="password-confirmacion" type="password" name="password_confirmacion" minlength="6" maxlength="72" autocomplete="new-password" required>
+            <input id="password-confirmacion" type="password" name="password_confirmacion" minlength="8" maxlength="16" autocomplete="new-password" required>
         </label>
         <button class="btn" type="submit">Actualizar contraseña</button>
-    </form>
+        </form>
+    </details>
 
+    <?php if (strtolower((string) ($_SESSION['rol'] ?? '')) === 'usuario'): ?>
+        <details class="perfil-acordeon control-cuenta">
+            <summary>Control de cuenta</summary>
+            <p>Al eliminarla, se cerrará tu sesión, tus datos personales se anonimizarán y podrás volver a registrarte con el mismo correo. Los registros de compras se conservarán de forma anónima.</p>
+            <form action="perfil.php" method="POST" autocomplete="off" onsubmit="return confirm('¿Confirmas que deseas eliminar tu cuenta? Esta acción no se puede deshacer.');">
+                <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCsrf, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="eliminar_cuenta" value="1">
+                <label class="perfil-campo" for="password-eliminar">Contraseña actual
+                    <input id="password-eliminar" type="password" name="password_eliminar" autocomplete="current-password" required>
+                </label>
+                <label class="confirmar-eliminacion">
+                    <input type="checkbox" name="confirmar_eliminacion" value="si" required>
+                    Confirmo que quiero eliminar mi cuenta.
+                </label>
+                <button class="btn btn-eliminar-cuenta" type="submit">Eliminar cuenta</button>
+            </form>
+        </details>
+    <?php endif; ?>
+
+    <?php if (!$esAdministrador): ?>
     <div class="resumen-cuenta">
         <div><strong>Compras realizadas</strong><br><?= $totalCompras ?></div>
         <div><strong>Productos en carrito</strong><br><?= $productosCarrito ?></div>
@@ -318,6 +451,7 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
     <p>No has realizado compras aún</p>
 
 <?php endif; ?>
+    <?php endif; ?>
 
     <br>
 
@@ -327,5 +461,6 @@ foreach ($_SESSION['carrito'] ?? [] as $producto) {
 
 </div>
 
+<?php include __DIR__ . '/footer.php'; ?>
 </body>
 </html>

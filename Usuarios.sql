@@ -1,4 +1,3 @@
-INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES
-('Admin', 'AdminAlways@gmail.com', '123456', 'admin'),
-('Usuario Demo', 'user@gmail.com', '123456', 'usuario');
+-- No se insertan cuentas de demostración con contraseñas públicas.
+-- La cuenta administradora se inicializa desde ADMIN_INITIAL_PASSWORD en el entorno.
 

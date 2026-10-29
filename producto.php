@@ -5,22 +5,51 @@ $conexion = $GLOBALS['conexion'];
 
 $nombre = trim($_GET['nombre'] ?? 'Producto');
 $productoId = null;
-$stmtProducto = mysqli_prepare($conexion, 'SELECT id FROM productos WHERE nombre = ? LIMIT 1');
-if ($stmtProducto) {
-    mysqli_stmt_bind_param($stmtProducto, 's', $nombre);
-    mysqli_stmt_execute($stmtProducto);
-    $resultadoProducto = mysqli_stmt_get_result($stmtProducto);
-    $filaProducto = $resultadoProducto ? mysqli_fetch_assoc($resultadoProducto) : null;
-    if ($filaProducto) {
-        $productoId = (int) $filaProducto['id'];
+$idRecibido = $_GET['id'] ?? null;
+$productoIdSolicitado = is_scalar($idRecibido) ? filter_var($idRecibido, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : false;
+if (isset($_GET['id'])) {
+    if ($productoIdSolicitado === false || $productoIdSolicitado === null) {
+        http_response_code(404);
+        exit('El producto solicitado ya no está disponible.');
     }
-    mysqli_stmt_close($stmtProducto);
+    $stmtProducto = mysqli_prepare($conexion, 'SELECT id, nombre, precio, imagen, descripcion, categoria FROM productos WHERE id = ? AND activo = 1 LIMIT 1');
+    if ($stmtProducto) {
+        mysqli_stmt_bind_param($stmtProducto, 'i', $productoIdSolicitado);
+        mysqli_stmt_execute($stmtProducto);
+        $resultadoProducto = mysqli_stmt_get_result($stmtProducto);
+        $filaProducto = $resultadoProducto ? mysqli_fetch_assoc($resultadoProducto) : null;
+        mysqli_stmt_close($stmtProducto);
+    } else {
+        $filaProducto = null;
+    }
+    if (!$filaProducto) {
+        http_response_code(404);
+        exit('El producto solicitado ya no está disponible.');
+    }
+    $productoId = (int) $filaProducto['id'];
+    $nombre = $filaProducto['nombre'];
+    $precio = (int) $filaProducto['precio'];
+    $imagen = $filaProducto['imagen'] ?? '';
+    $descripcion = trim($filaProducto['descripcion'] ?? 'Este producto fue seleccionado para acompañar tu rutina de belleza.');
+    $categoria = trim($filaProducto['categoria'] ?? 'Always Beautiful');
+} else {
+    $stmtProducto = mysqli_prepare($conexion, 'SELECT id FROM productos WHERE nombre = ? LIMIT 1');
+    if ($stmtProducto) {
+        mysqli_stmt_bind_param($stmtProducto, 's', $nombre);
+        mysqli_stmt_execute($stmtProducto);
+        $resultadoProducto = mysqli_stmt_get_result($stmtProducto);
+        $filaProducto = $resultadoProducto ? mysqli_fetch_assoc($resultadoProducto) : null;
+        if ($filaProducto) {
+            $productoId = (int) $filaProducto['id'];
+        }
+        mysqli_stmt_close($stmtProducto);
+    }
+    $precio = (int) ($_GET['precio'] ?? 0);
+    $imagen = $_GET['imagen'] ?? '';
+    $descripcion = trim($_GET['descripcion'] ?? 'Este producto fue seleccionado para acompañar tu rutina de belleza.');
+    $categoria = trim($_GET['categoria'] ?? 'Always Beautiful');
 }
-$precio = (int) ($_GET['precio'] ?? 0);
-$imagen = $_GET['imagen'] ?? '';
-$descripcion = trim($_GET['descripcion'] ?? 'Este producto fue seleccionado para acompañar tu rutina de belleza.');
 $valoracion = 0;
-$categoria = trim($_GET['categoria'] ?? 'Always Beautiful');
 $beneficios = [
     'Maquillaje' => 'Ayuda a crear looks definidos y a realzar tus facciones con un acabado bonito y duradero.',
     'Piel' => 'Ayuda a limpiar, hidratar y proteger la piel para mantenerla suave, fresca y cuidada.',
@@ -246,5 +275,6 @@ function estrellas($cantidad) {
         <?php endforeach; ?>
     </section>
 </main>
+<?php include __DIR__ . '/footer.php'; ?>
 </body>
 </html>

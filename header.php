@@ -12,8 +12,23 @@ $notificacion = $_SESSION['notificacion'] ?? null;
 if ($notificacion) {
     unset($_SESSION['notificacion']);
 }
+$soloNotificacion = ($notificacion['tipo'] ?? '') === 'verde';
+$esAdministrador = strtolower((string) ($_SESSION['rol'] ?? '')) === 'admin';
+$esUsuarioAutenticado = !empty($_SESSION['usuario_id']) && !$esAdministrador;
 $respuestasSinLeer = 0;
-if (!empty($_SESSION['usuario_id']) && isset($GLOBALS['conexion'])) {
+$avisosSinLeer = 0;
+$puntosUsuario = 0;
+if ($esUsuarioAutenticado && isset($GLOBALS['conexion'])) {
+    $puntosUsuario = puntosDisponiblesUsuario($GLOBALS['conexion'], (int) $_SESSION['usuario_id']);
+    $stmtAvisosSinLeer = mysqli_prepare($GLOBALS['conexion'], 'SELECT COUNT(*) FROM notificaciones_usuarios WHERE usuario_id = ? AND leida = 0');
+    if ($stmtAvisosSinLeer) {
+        $usuarioAvisosId = (int) $_SESSION['usuario_id'];
+        mysqli_stmt_bind_param($stmtAvisosSinLeer, 'i', $usuarioAvisosId);
+        mysqli_stmt_execute($stmtAvisosSinLeer);
+        mysqli_stmt_bind_result($stmtAvisosSinLeer, $avisosSinLeer);
+        mysqli_stmt_fetch($stmtAvisosSinLeer);
+        mysqli_stmt_close($stmtAvisosSinLeer);
+    }
     require_once __DIR__ . '/migracion_respuestas_leidas.php';
     $stmtRespuestasSinLeer = mysqli_prepare($GLOBALS['conexion'], "SELECT COUNT(*) FROM respuestas_mensajes r JOIN mensajes_contacto m ON m.id = r.mensaje_id WHERE r.visto_usuario = 0 AND (m.usuario_id = ? OR (m.usuario_id IS NULL AND m.correo = ?))");
     if ($stmtRespuestasSinLeer) {
@@ -30,12 +45,20 @@ if (!empty($_SESSION['usuario_id']) && isset($GLOBALS['conexion'])) {
 
 <header class="header">
     <div class="barra-principal">
-        <a href="inicio.php" class="marca" aria-label="Always Beautiful, inicio">
+        <a href="<?= $esAdministrador ? 'Administrador/index.php' : 'inicio.php' ?>" class="marca" aria-label="Always Beautiful, inicio">
             <img src="IMG/logo.png" alt="Always Beautiful" class="logo-header">
             <span class="nombre-marca">Always Beautiful</span>
         </a>
 
         <nav class="menu" aria-label="Navegación principal">
+            <?php if ($esAdministrador): ?>
+                <a href="Administrador/index.php" class="item">Panel</a>
+                <a href="Administrador/usuarios.php" class="item">Usuarios</a>
+                <a href="Administrador/productos.php" class="item">Productos</a>
+                <a href="Administrador/ventas.php" class="item">Ventas</a>
+                <a href="Administrador/reportes.php" class="item">Reportes</a>
+                <a href="perfil.php" class="item">Seguridad</a>
+            <?php else: ?>
             <a href="inicio.php" class="item"><img src="IMG/Inicio-logo.png" alt="" class="menu-icon">Inicio</a>
             <div class="item dropdown">
                 <button type="button" class="item-trigger" aria-expanded="false"><img src="IMG/productos-logo.png" alt="" class="menu-icon">Productos</button>
@@ -44,6 +67,7 @@ if (!empty($_SESSION['usuario_id']) && isset($GLOBALS['conexion'])) {
                     <a href="Accesorios.php">Accesorios</a>
                     <a href="cabello.php">Cuidado del cabello</a>
                     <a href="piel.php">Cuidado de la piel</a>
+                                    <a href="perfumes.php">Perfumes</a>
                 </div>
             </div>
             <div class="item dropdown modulo-nosotros">
@@ -63,7 +87,7 @@ if (!empty($_SESSION['usuario_id']) && isset($GLOBALS['conexion'])) {
             <div class="item dropdown">
                 <button type="button" class="item-trigger" aria-expanded="false"><img src="IMG/contacto-logo.png" alt="" class="menu-icon">Contacto</button>
                 <div class="submenu">
-                    <?php if (isset($_SESSION['usuario_id'])): ?>
+                    <?php if ($esUsuarioAutenticado): ?>
                         <a href="formulario.php">Formulario</a>
                     <?php endif; ?>
                     <a href="ubicacion.php">Ubicación</a>
@@ -77,11 +101,18 @@ if (!empty($_SESSION['usuario_id']) && isset($GLOBALS['conexion'])) {
                     <a href="preguntas.php">Preguntas frecuentes</a>
                 </div>
             </div>
+            <?php endif; ?>
         </nav>
 
         <div class="acciones-header">
             <div class="acceso-cuenta">
-        <?php if (isset($_SESSION['usuario_id'])): ?>
+        <?php if ($esAdministrador): ?>
+            <span class="saludo">Administrador</span>
+            <div class="perfil-menu">
+                <a class="perfil-trigger" href="Administrador/index.php" aria-label="Abrir panel de administrador">A</a>
+            </div>
+            <a class="perfil-trigger" href="logout.php" aria-label="Cerrar sesión de administrador">Salir</a>
+        <?php elseif ($esUsuarioAutenticado): ?>
             <span class="saludo">Hola, <?= htmlspecialchars($_SESSION['nombre'] ?? 'Usuario') ?></span>
             <div class="perfil-menu">
                 <button type="button" class="perfil-trigger" aria-label="Abrir menú de usuario" aria-expanded="false">
@@ -114,10 +145,16 @@ if(isset($_SESSION['carrito'])){
 }
 ?>
 
-            <?php if (isset($_SESSION['usuario_id'])): ?>
-                <a href="ver_carrito.php" class="carrito" aria-label="Carrito de compras">
-                    <span aria-hidden="true">&#128722;</span><span class="contador-carrito"><?= $totalCarrito ?></span>
-                </a>
+            <?php if ($esUsuarioAutenticado): ?>
+                <div class="accesos-beneficios">
+                    <a href="beneficios_cliente.php" class="acceso-avisos" aria-label="Notificaciones y beneficios<?= $avisosSinLeer > 0 ? ', ' . (int) $avisosSinLeer . ' sin leer' : '' ?>">
+                        <span aria-hidden="true">&#128276;</span><?php if ($avisosSinLeer > 0): ?><span class="contador-avisos"><?= (int) $avisosSinLeer ?></span><?php endif; ?>
+                    </a>
+                    <a href="beneficios_cliente.php" class="saldo-puntos" aria-label="Tienes <?= (int) $puntosUsuario ?> puntos acumulados"><?= (int) $puntosUsuario ?> pts</a>
+                    <a href="ver_carrito.php" class="carrito" aria-label="Carrito de compras">
+                        <span aria-hidden="true">&#128722;</span><span class="contador-carrito"><?= $totalCarrito ?></span>
+                    </a>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -128,11 +165,13 @@ if(isset($_SESSION['carrito'])){
 <div class="modal-auth" id="autenticacion" aria-hidden="true">
     <div class="modal-auth-contenido" role="dialog" aria-modal="true" aria-labelledby="titulo-auth">
         <button type="button" class="modal-cerrar" aria-label="Cerrar">&times;</button>
+        <?php if (!$soloNotificacion): ?>
         <img src="IMG/logo.png" alt="Always Beautiful" class="modal-logo">
         <div class="auth-tabs">
             <button type="button" class="auth-tab" data-auth-tab="register">Crear cuenta</button>
             <button type="button" class="auth-tab activo" data-auth-tab="login">Iniciar sesión</button>
         </div>
+        <?php endif; ?>
 
         <?php if ($notificacion): ?>
             <div class="notificacion-modal <?= htmlspecialchars($notificacion['tipo']) ?>" id="notificacion-auth" role="alert">
@@ -140,6 +179,7 @@ if(isset($_SESSION['carrito'])){
             </div>
         <?php endif; ?>
 
+        <?php if (!$soloNotificacion): ?>
         <div class="auth-panel oculto" data-auth-panel="register">
             <h2 id="titulo-auth">Regístrate para continuar</h2>
             <form action="guardar-usuario.php" method="POST" autocomplete="off">
@@ -151,8 +191,8 @@ if(isset($_SESSION['carrito'])){
                     <option value="mujer">Mujer</option>
                     <option value="hombre">Hombre</option>
                 </select>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false">&#128065;</button></div>
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar confirmación" aria-pressed="false">&#128065;</button></div>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false">&#128065;</button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación" aria-pressed="false">&#128065;</button></div>
                 <button type="submit">Crear cuenta</button>
             </form>
         </div>
@@ -162,10 +202,15 @@ if(isset($_SESSION['carrito'])){
             <form action="login.php" method="POST" autocomplete="on">
                 <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
                 <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false">&#128065;</button></div>
+                <select name="rol" aria-label="Rol de inicio de sesión" required>
+                    <option value="usuario">Usuario</option>
+                    <option value="admin">Administrador</option>
+                </select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>
@@ -244,13 +289,13 @@ abrirAutenticacion("<?= htmlspecialchars($notificacion['modo'] ?? 'register') ?>
 if (notificacionAuth) {
     setTimeout(() => {
         notificacionAuth.classList.add("oculto");
-        <?php if (($notificacion['tipo'] ?? '') === 'verde'): ?>
+        <?php if (($notificacion['tipo'] ?? '') === 'verde' && empty($notificacion['mantener_modal'])): ?>
         if (modalAuth) {
             modalAuth.classList.remove("visible");
             modalAuth.setAttribute("aria-hidden", "true");
         }
         <?php endif; ?>
-    }, 500);
+    }, 2500);
 }
 <?php endif; ?>
 

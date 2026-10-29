@@ -45,9 +45,10 @@ session_start();
                     <option value="hombre">Hombre</option>
                 </select>
 
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s]).{8,16}" title="Usa 8 a 16 caracteres, con mayúscula, minúscula, número y símbolo." required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
+                <small>Usa al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo.</small>
 
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
 
                 <button type="submit">Crear cuenta</button>
 

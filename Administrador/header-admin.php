@@ -5,6 +5,8 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // Incluir conexión para contar mensajes sin leer
 include_once(__DIR__ . '/../conexion.php');
+$notificacionAdmin = $_SESSION['notificacion'] ?? null;
+unset($_SESSION['notificacion']);
 $no_leidos_mensajes = 0;
 if (isset($conexion)) {
     $resultado = mysqli_query($conexion, "SELECT COUNT(*) as total FROM mensajes_contacto WHERE estado='no_leido'");
@@ -18,7 +20,7 @@ if (isset($conexion)) {
 
 <style>
     .header-admin {
-        background: linear-gradient(180deg, #f6dff4 0%, #c0b0c2 100%);
+        background: linear-gradient(110deg, #843554 0%, #a8476d 55%, #d17b68 100%);
         border-radius: 32px;
         box-shadow: 0 8px 18px rgba(105, 76, 98, .14);
         color: #fff;
@@ -93,30 +95,20 @@ if (isset($conexion)) {
         position: relative;
     }
 
-    .header-admin .menu a:hover {
-        background: rgba(255, 255, 255, .18);
-        color: #fff;
-    }
-
-    /* Colores por módulo */
-    .header-admin .menu a[href*="usuarios.php"] {
-        color: #0056b3;
-    }
-
-    .header-admin .menu a[href*="productos.php"] {
-        color: #28a745;
-    }
-
-    .header-admin .menu a[href*="mensajes.php"] {
-        color: #ffc107;
-    }
-
-    .header-admin .menu a[href*="ventas.php"] {
-        color: #dc3545;
-    }
-
+    .header-admin .menu a,
+    .header-admin .menu a[href*="usuarios.php"],
+    .header-admin .menu a[href*="productos.php"],
+    .header-admin .menu a[href*="mensajes.php"],
+    .header-admin .menu a[href*="ventas.php"],
     .header-admin .menu a[href*="reportes.php"] {
-        color: #17a2b8;
+        color: #fffaf6;
+        text-shadow: 0 1px 2px rgba(54, 28, 35, .24);
+    }
+
+    .header-admin .menu a:hover {
+        background: rgba(255, 255, 255, .2);
+        color: #fff;
+        transform: translateY(-1px);
     }
 
     .menu-icon {
@@ -154,7 +146,7 @@ if (isset($conexion)) {
     }
 
     .header-admin .perfil-trigger {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.18);
         border: 2px solid white;
         border-radius: 50%;
         width: 48px;
@@ -209,7 +201,7 @@ if (isset($conexion)) {
 
     .header-admin .perfil-submenu strong {
         display: block;
-        color: #d63384;
+        color: #8b3d60;
         margin-bottom: 10px;
         border-bottom: 1px solid #e9ecef;
         padding-bottom: 10px;
@@ -227,8 +219,23 @@ if (isset($conexion)) {
     }
 
     .header-admin .perfil-submenu a:hover {
-        color: #d63384;
+        color: #8b3d60;
         font-weight: bold;
+    }
+
+    .aviso-admin {
+        background: #e8f4eb;
+        border-left: 4px solid #2e8b57;
+        border-radius: 5px;
+        color: #245b33;
+        margin: 14px 30px 0;
+        padding: 11px 14px;
+    }
+
+    .aviso-admin.error {
+        background: #fff0ed;
+        border-color: #c62828;
+        color: #8b2f24;
     }
 
     @media (max-width: 768px) {
@@ -275,6 +282,7 @@ if (isset($conexion)) {
             <a href="index.php" title="Ir al inicio">Inicio</a>
             <a href="usuarios.php" title="Gestionar usuarios">Usuarios</a>
             <a href="productos.php" title="Gestionar productos">Productos</a>
+            <a href="producto-destacado.php" title="Administrar producto destacado">Destacado</a>
             <a href="mensajes.php" title="Ver mensajes de contacto" style="position: relative;">
                 Mensajes
                 <?php if ($no_leidos_mensajes > 0): ?>
@@ -296,12 +304,21 @@ if (isset($conexion)) {
             </button>
             <div class="perfil-submenu">
                 <strong><?= htmlspecialchars($_SESSION['usuario'] ?? $_SESSION['nombre'] ?? 'Administrador') ?></strong>
-                <a href="../perfil.php">Mi perfil y contraseña</a>
+                <a href="../perfil.php">Seguridad de la cuenta</a>
                 <a href="logout.php">Cerrar sesión</a>
             </div>
         </div>
     </div>
 </header>
+
+<?php if ($notificacionAdmin): ?>
+    <div class="aviso-admin <?= ($notificacionAdmin['tipo'] ?? '') === 'verde' ? '' : 'error' ?>" id="aviso-admin" role="status">
+        <?= htmlspecialchars((string) ($notificacionAdmin['mensaje'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
+    </div>
+    <script>
+    setTimeout(() => document.getElementById('aviso-admin')?.remove(), 2500);
+    </script>
+<?php endif; ?>
 
 <script>
 const menuPerfilAdmin = document.querySelector(".header-admin .perfil-menu");

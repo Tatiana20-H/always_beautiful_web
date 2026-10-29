@@ -42,14 +42,14 @@ if (isset($_POST['guardar_imagen_galeria'])) {
     $archivoGaleria = $_FILES['imagen_galeria'] ?? null;
     $rutaGaleria = '';
     if ($archivoGaleria && ($archivoGaleria['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
-        $carpetaGaleria = __DIR__ . '/../IMG/galeria';
+        $carpetaGaleria = __DIR__ . '/../IMG/productos';
         if (!is_dir($carpetaGaleria)) {
             mkdir($carpetaGaleria, 0777, true);
         }
         $nombreArchivoGaleria = str_replace('.', '_', uniqid('', true)) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($archivoGaleria['name']));
         $destinoGaleria = $carpetaGaleria . '/' . $nombreArchivoGaleria;
         if (move_uploaded_file($archivoGaleria['tmp_name'], $destinoGaleria)) {
-            $rutaGaleria = 'IMG/galeria/' . $nombreArchivoGaleria;
+            $rutaGaleria = 'IMG/productos/' . $nombreArchivoGaleria;
             $nombreOriginalGaleria = basename($archivoGaleria['name']);
             $stmtImagenGaleria = mysqli_prepare($conexion, "INSERT INTO galeria_inicio (nombre, ruta, administrador_id) VALUES (?, ?, ?)");
             if ($stmtImagenGaleria) {
@@ -91,7 +91,7 @@ include("header-admin.php");
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        min-height: 100%;
+        align-self: flex-start;
     }
 
     .stats-admin {
@@ -128,8 +128,8 @@ include("header-admin.php");
     .formulario-producto form {
         display: flex;
         flex-direction: column;
-        height: 100%;
-        flex: 1;
+        height: auto;
+        flex: 0 0 auto;
     }
 
     .formulario-producto input,
@@ -139,12 +139,47 @@ include("header-admin.php");
         box-sizing: border-box;
     }
 
+    .formulario-producto form > input[type="file"] {
+        display: none;
+    }
+
     .formularios-fila {
         display: flex;
         gap: 20px;
-        align-items: stretch;
+        align-items: flex-start;
         flex-wrap: wrap;
+        justify-content: space-between;
         margin-bottom: 30px;
+    }
+
+    .formulario-eliminar {
+        max-width: 320px;
+        flex: 1 1 260px;
+    }
+
+    .formulario-eliminar h3 {
+        color: #9c3434;
+        margin-top: 0;
+    }
+
+    .formulario-eliminar select {
+        border: 1px solid #d8c8c0;
+        border-radius: 8px;
+        box-sizing: border-box;
+        margin: 0 0 14px;
+        padding: 12px;
+        width: 100%;
+    }
+
+    .formulario-eliminar button {
+        background: #9c3434;
+        border: 0;
+        border-radius: 8px;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 12px;
+        width: 100%;
     }
 
     .galeria-miniatura {
@@ -257,6 +292,11 @@ include("header-admin.php");
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     }
 
+    .galeria-productos-lista { display: grid; gap: 18px; }
+    .galeria-productos-categoria { border-bottom: 1px solid #ead9ce; padding-bottom: 16px; }
+    .galeria-productos-categoria:last-child { border-bottom: 0; padding-bottom: 0; }
+    .galeria-productos-categoria h4 { color: #743629; font: 700 14px Georgia, "Times New Roman", serif; margin: 0 0 10px; }
+
     .galeria-completa figure {
         margin: 0;
     }
@@ -292,12 +332,12 @@ include("header-admin.php");
     }
 
     .formulario-producto form > button[type="submit"] {
-        margin-top: auto;
+        margin-top: 12px;
     }
 
     .formulario-producto form > .selector-galeria {
         margin-bottom: 10px !important;
-        margin-top: auto !important;
+        margin-top: 0 !important;
     }
 
     .formulario-producto form > .selector-galeria + .ruta-imagen-seleccionada + button[type="submit"] {
@@ -317,6 +357,54 @@ include("header-admin.php");
         object-fit: cover;
         width: 100%;
     }
+
+    .imagen-elegida-preview {
+        aspect-ratio: 1;
+        background: #f4f1ec;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-sizing: border-box;
+        display: none;
+        height: 72px;
+        margin: 0 0 8px;
+        object-fit: contain;
+        width: 72px;
+    }
+
+    .conteo-categorias {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: -8px 0 24px;
+    }
+
+    .conteo-categorias span {
+        background: #fff;
+        border: 1px solid #d9e4dc;
+        border-radius: 8px;
+        color: #365344;
+        padding: 8px 12px;
+    }
+
+    .editar-fila,
+    .guardar-fila,
+    .cancelar-fila {
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+        padding: 7px 10px;
+        width: auto;
+    }
+
+    .editar-fila { background: #e8f2eb; color: #1f6735; }
+    .guardar-fila { background: #23813d; color: #fff; display: none; }
+    .cancelar-fila { background: #eee; color: #444; display: none; }
+    .tabla-productos tr.editando .editar-fila { display: none; }
+    .tabla-productos tr.editando .guardar-fila,
+    .tabla-productos tr.editando .cancelar-fila { display: inline-block; }
+    .tabla-productos .campo-edicion { display: none; max-width: 180px; width: 100%; }
+    .tabla-productos tr.editando .valor-visible { display: none; }
+    .tabla-productos tr.editando .campo-edicion { display: inline-block; }
 
     .abrir-preview {
         background: #b87552 !important;
@@ -573,6 +661,16 @@ include("header-admin.php");
     <?php
     $total_promos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM promociones"))['total'];
     $total_combos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM combos"))['total'];
+    $categoriasProducto = ['Piel' => 'Cuidado de piel', 'Cabello' => 'Cabello', 'Maquillaje' => 'Maquillaje', 'Accesorios' => 'Accesorios', 'Perfumes' => 'Perfumes'];
+    $conteosCategoria = array_fill_keys(array_keys($categoriasProducto), 0);
+    $resultadoConteos = mysqli_query($conexion, "SELECT categoria, COUNT(*) AS total FROM productos GROUP BY categoria");
+    if ($resultadoConteos) {
+        while ($conteoCategoria = mysqli_fetch_assoc($resultadoConteos)) {
+            if (array_key_exists($conteoCategoria['categoria'], $conteosCategoria)) {
+                $conteosCategoria[$conteoCategoria['categoria']] = (int) $conteoCategoria['total'];
+            }
+        }
+    }
     ?>
 
     <div class="stats-admin">
@@ -590,12 +688,18 @@ include("header-admin.php");
         </div>
     </div>
 
+    <div class="conteo-categorias" aria-label="Productos por categoría">
+        <?php foreach ($categoriasProducto as $claveCategoria => $nombreCategoria): ?>
+            <span><?php echo htmlspecialchars($nombreCategoria); ?>: <strong><?php echo $conteosCategoria[$claveCategoria]; ?></strong></span>
+        <?php endforeach; ?>
+    </div>
+
     <div class="formularios-fila">
         <div class="formulario-producto">
             <h3>Agregar Nuevo Producto</h3>
             <form method="POST" enctype="multipart/form-data" id="form-producto">
                 <input type="text" name="nombre" id="producto-nombre" placeholder="Nombre del producto" required>
-                <input type="number" name="precio" id="producto-precio" placeholder="Precio" min="0" required>
+                <input type="text" name="precio" id="producto-precio" placeholder="Precio (ej. 169.000)" inputmode="numeric" pattern="[0-9.,]+" required>
                 <input type="number" name="stock" id="producto-stock" placeholder="Stock disponible" min="0" required>
                 <input type="text" name="descripcion" id="producto-descripcion" placeholder="Descripción del producto">
                 <select name="categoria" id="producto-categoria" required>
@@ -604,12 +708,43 @@ include("header-admin.php");
                     <option value="Cabello">Cabello</option>
                     <option value="Maquillaje">Maquillaje</option>
                     <option value="Accesorios">Accesorios</option>
+                    <option value="Perfumes">Perfumes</option>
                 </select>
-                <input type="file" name="imagen" accept="image/*">
+                <input type="file" name="imagen" id="producto-imagen" accept="image/*">
                 <input type="hidden" name="imagen_galeria_ruta" id="producto-imagen-ruta">
-                <button class="selector-galeria" type="button" data-default-label="Seleccionar imagen de la galería" data-galeria-target="producto-imagen-ruta" data-galeria-preview="producto-imagen-preview">Seleccionar imagen de la galería</button>
+                <button class="selector-galeria" id="buscar-imagen-producto" type="button">Buscar imagen en el equipo</button>
+                <img class="imagen-elegida-preview" id="producto-imagen-elegida" alt="Imagen del producto seleccionada">
                 <span class="ruta-imagen-seleccionada" id="producto-imagen-preview">Ninguna imagen seleccionada</span>
                 <button type="submit" name="guardar">Guardar Producto</button>
+            </form>
+        </div>
+
+        <div class="formulario-producto formulario-eliminar">
+            <h3>Eliminar producto, promoción o combo</h3>
+            <form method="POST" data-confirm-delete>
+                <select name="elemento_eliminar" required aria-label="Título del elemento">
+                    <option value="">Selecciona un título</option>
+                    <?php
+                    $elementosEliminar = [
+                        'Producto' => ['tabla' => 'productos', 'tipo' => 'producto', 'columna' => 'nombre'],
+                        'Promoción' => ['tabla' => 'promociones', 'tipo' => 'promocion', 'columna' => 'titulo'],
+                        'Combo' => ['tabla' => 'combos', 'tipo' => 'combo', 'columna' => 'nombre'],
+                    ];
+                    foreach ($elementosEliminar as $grupoEliminar => $configuracionEliminar):
+                        $resultadoEliminar = mysqli_query($conexion, "SELECT id, {$configuracionEliminar['columna']} AS titulo FROM {$configuracionEliminar['tabla']} ORDER BY {$configuracionEliminar['columna']} ASC");
+                        if ($resultadoEliminar && mysqli_num_rows($resultadoEliminar) > 0):
+                    ?>
+                        <optgroup label="<?php echo htmlspecialchars($grupoEliminar, ENT_QUOTES, 'UTF-8'); ?>">
+                            <?php while ($elementoEliminar = mysqli_fetch_assoc($resultadoEliminar)): ?>
+                                <option value="<?php echo $configuracionEliminar['tipo'] . ':' . (int) $elementoEliminar['id']; ?>"><?php echo htmlspecialchars($elementoEliminar['titulo'], ENT_QUOTES, 'UTF-8'); ?></option>
+                            <?php endwhile; ?>
+                        </optgroup>
+                    <?php
+                        endif;
+                    endforeach;
+                    ?>
+                </select>
+                <button type="submit" name="eliminar_elemento" value="1">Eliminar</button>
             </form>
         </div>
 
@@ -629,10 +764,14 @@ include("header-admin.php");
                     <option value="Cabello">Cabello</option>
                     <option value="Maquillaje">Maquillaje</option>
                     <option value="Accesorios">Accesorios</option>
+                    <option value="Perfumes">Perfumes</option>
                 </select>
-                <input type="number" name="oferta_precio" id="oferta-precio" placeholder="Precio" min="0" required>
+                <input type="text" name="oferta_precio" id="oferta-precio" placeholder="Precio en COP (ej. 140.000)" inputmode="numeric" pattern="[0-9.,]+" required>
+                <input type="number" name="oferta_descuento" id="oferta-descuento" placeholder="Descuento (%)" min="0" max="100" step="0.01" value="0" required>
                 <input type="hidden" name="imagen_galeria_ruta" id="oferta-imagen-ruta">
-                <button class="selector-galeria" type="button" data-default-label="Seleccionar imagen de la galería" data-galeria-target="oferta-imagen-ruta" data-galeria-preview="oferta-imagen-preview">Seleccionar imagen de la galería</button>
+                <button class="selector-galeria" id="buscar-imagen-oferta" type="button">Buscar imagen en el equipo</button>
+                <input type="file" name="oferta_imagen" id="oferta-imagen" accept="image/*">
+                <img class="imagen-elegida-preview" id="oferta-imagen-elegida" alt="Imagen de la promoción o combo seleccionada">
                 <span class="ruta-imagen-seleccionada" id="oferta-imagen-preview">Ninguna imagen seleccionada</span>
                 <button type="submit" name="guardar_oferta">Guardar promoción o combo</button>
             </form>
@@ -651,7 +790,7 @@ include("header-admin.php");
             </form>
             <div class="galeria-completa">
                 <?php
-                $imagenesGaleria = mysqli_query($conexion, "SELECT nombre, ruta FROM galeria_inicio ORDER BY fecha_creacion DESC LIMIT 100");
+                $imagenesGaleria = mysqli_query($conexion, "SELECT nombre, ruta FROM galeria_inicio WHERE ruta LIKE 'IMG/productos/%' ORDER BY fecha_creacion DESC LIMIT 100");
                 if ($imagenesGaleria && mysqli_num_rows($imagenesGaleria) > 0):
                     while ($imagenGaleria = mysqli_fetch_assoc($imagenesGaleria)):
                 ?>
@@ -665,6 +804,60 @@ include("header-admin.php");
                 ?>
                     <p class="galeria-vacia">Todavía no hay imágenes subidas.</p>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="galeria-overlay" id="galeria-productos-overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-galeria-productos">
+        <div class="galeria-modal">
+            <button class="cerrar-galeria" id="cerrar-galeria-productos" type="button" aria-label="Cerrar selector de imágenes">x</button>
+            <h3 id="titulo-galeria-productos">Imágenes de productos existentes</h3>
+            <?php
+            $categoriasImagenesOferta = [
+                'Maquillaje' => 'Maquillaje',
+                'Piel' => 'Cuidado de piel',
+                'Cabello' => 'Cabello',
+                'Accesorios' => 'Accesorios',
+                'Perfumes' => 'Perfumes',
+            ];
+            $imagenesProductosPorCategoria = array_fill_keys(array_keys($categoriasImagenesOferta), []);
+            $imagenesProductosExistentes = mysqli_query($conexion, "SELECT nombre, categoria, imagen FROM productos WHERE activo = 1 AND imagen IS NOT NULL AND imagen <> '' ORDER BY nombre ASC");
+            if ($imagenesProductosExistentes) {
+                while ($productoConImagen = mysqli_fetch_assoc($imagenesProductosExistentes)) {
+                    $categoriaImagen = (string) ($productoConImagen['categoria'] ?? '');
+                    $rutaImagenProducto = trim((string) $productoConImagen['imagen']);
+                    $rutaRealProducto = strpos($rutaImagenProducto, 'IMG/') === 0 && strpos($rutaImagenProducto, '..') === false
+                        ? realpath(__DIR__ . '/../' . $rutaImagenProducto)
+                        : false;
+                    $directorioImagenesProyecto = realpath(__DIR__ . '/../IMG');
+                    if (!isset($imagenesProductosPorCategoria[$categoriaImagen]) || !$rutaRealProducto || !$directorioImagenesProyecto || strpos($rutaRealProducto, $directorioImagenesProyecto . DIRECTORY_SEPARATOR) !== 0) {
+                        continue;
+                    }
+                    $imagenesProductosPorCategoria[$categoriaImagen][] = [
+                        'nombre' => $productoConImagen['nombre'],
+                        'ruta' => $rutaImagenProducto,
+                    ];
+                }
+            }
+            ?>
+            <div class="galeria-productos-lista">
+                <?php $hayImagenesProductos = false; ?>
+                <?php foreach ($categoriasImagenesOferta as $categoriaImagen => $nombreCategoriaImagen): ?>
+                    <?php if ($imagenesProductosPorCategoria[$categoriaImagen]): $hayImagenesProductos = true; ?>
+                        <section class="galeria-productos-categoria" aria-label="<?= htmlspecialchars($nombreCategoriaImagen, ENT_QUOTES, 'UTF-8') ?>">
+                            <h4><?= htmlspecialchars($nombreCategoriaImagen, ENT_QUOTES, 'UTF-8') ?></h4>
+                            <div class="galeria-completa">
+                                <?php foreach ($imagenesProductosPorCategoria[$categoriaImagen] as $productoConImagen): ?>
+                                    <figure>
+                                        <img src="../<?= htmlspecialchars($productoConImagen['ruta'], ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($productoConImagen['nombre'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="button" class="usar-imagen-producto" data-ruta="<?= htmlspecialchars($productoConImagen['ruta'], ENT_QUOTES, 'UTF-8') ?>" data-nombre="<?= htmlspecialchars($productoConImagen['nombre'], ENT_QUOTES, 'UTF-8') ?>">Seleccionar</button>
+                                    </figure>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                <?php if (!$hayImagenesProductos): ?><p class="galeria-vacia">No hay productos activos con imagen disponible.</p><?php endif; ?>
             </div>
         </div>
     </div>
@@ -699,27 +892,47 @@ include("header-admin.php");
             return '';
         }
 
-        if (!is_dir($carpeta)) {
-            mkdir($carpeta, 0777, true);
+        if (!is_dir($carpeta) && !mkdir($carpeta, 0775, true) && !is_dir($carpeta)) {
+            return '';
         }
 
-        $nombreArchivo = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($archivo['name']));
+        $tipoImagen = !empty($archivo['tmp_name']) ? mime_content_type($archivo['tmp_name']) : '';
+        if (!is_string($tipoImagen) || strpos($tipoImagen, 'image/') !== 0 || $archivo['size'] > 5 * 1024 * 1024) {
+            return '';
+        }
+
+        $nombreArchivo = bin2hex(random_bytes(8)) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($archivo['name']));
         $rutaDestino = $carpeta . '/' . $nombreArchivo;
 
         if (move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
-            return 'IMG/' . str_replace(__DIR__ . '/../', '', $rutaDestino);
+            $rutaReal = realpath($rutaDestino);
+            $raizProyecto = realpath(dirname(__DIR__));
+            if ($rutaReal && $raizProyecto && strpos($rutaReal, $raizProyecto . DIRECTORY_SEPARATOR) === 0) {
+                return str_replace(DIRECTORY_SEPARATOR, '/', substr($rutaReal, strlen($raizProyecto) + 1));
+            }
         }
 
         return '';
     }
 
+    function normalizarPrecioProducto($valor) {
+        $precio = trim((string) $valor);
+        if ($precio === '' || !preg_match('/^(?:[0-9]+|[0-9]{1,3}(?:[.,][0-9]{3})+)$/D', $precio)) {
+            return false;
+        }
+
+        $precio = str_replace(['.', ','], '', $precio);
+        $precioValidado = filter_var($precio, FILTER_VALIDATE_INT);
+        return $precioValidado !== false && $precioValidado >= 0 ? $precioValidado : false;
+    }
+
     if (isset($_POST['guardar'])) {
         $nombre = trim($_POST['nombre']);
-        $precio = (int) $_POST['precio'];
+        $precio = normalizarPrecioProducto($_POST['precio'] ?? '');
         $stock = (int) $_POST['stock'];
         $descripcion = trim($_POST['descripcion'] ?? '');
         $categoria = $_POST['categoria'] ?? '';
-        $categoriasPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios'];
+        $categoriasPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios', 'Perfumes'];
         $rutaImagen = trim($_POST['imagen_galeria_ruta'] ?? '');
         if ($rutaImagen === '') {
             $rutaImagen = subirImagenProducto($_FILES['imagen'] ?? null, __DIR__ . '/../IMG/productos');
@@ -728,7 +941,7 @@ include("header-admin.php");
             }
         }
 
-        if ($precio >= 0 && $stock >= 0 && $nombre !== '' && in_array($categoria, $categoriasPermitidas, true)) {
+        if ($precio !== false && $stock >= 0 && $nombre !== '' && in_array($categoria, $categoriasPermitidas, true)) {
             $verificarProducto = $conexion->prepare("SELECT id FROM productos WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(?)) LIMIT 1");
             if ($verificarProducto) {
                 $verificarProducto->bind_param('s', $nombre);
@@ -756,30 +969,91 @@ include("header-admin.php");
         }
     }
 
+    if (isset($_POST['eliminar_elemento'])) {
+        $seleccionEliminar = trim($_POST['elemento_eliminar'] ?? '');
+        if (preg_match('/^(producto|combo|promocion):([1-9][0-9]*)$/D', $seleccionEliminar, $coincidenciaEliminar)) {
+            $tablasEliminar = [
+                'producto' => 'productos',
+                'combo' => 'combos',
+                'promocion' => 'promociones',
+            ];
+            $tipoEliminar = $coincidenciaEliminar[1];
+            $idEliminar = (int) $coincidenciaEliminar[2];
+            $stmtEliminar = $conexion->prepare("DELETE FROM {$tablasEliminar[$tipoEliminar]} WHERE id = ?");
+            if ($stmtEliminar) {
+                $stmtEliminar->bind_param('i', $idEliminar);
+                $ejecucionEliminar = $stmtEliminar->execute();
+                $eliminado = $ejecucionEliminar && $stmtEliminar->affected_rows > 0;
+                $stmtEliminar->close();
+                echo $eliminado
+                    ? '<div class="alerta-exito">Elemento eliminado correctamente.</div>'
+                    : '<div class="alerta-error">' . ($ejecucionEliminar ? 'No se encontró el elemento seleccionado.' : 'No se pudo eliminar el elemento seleccionado.') . '</div>';
+            } else {
+                echo '<div class="alerta-error">No se pudo preparar la eliminación del elemento.</div>';
+            }
+        } else {
+            echo '<div class="alerta-error">Selecciona un título válido para eliminar.</div>';
+        }
+    }
+
+    if (isset($_POST['actualizar_producto'])) {
+        $productoIdEdicion = (int) ($_POST['producto_id'] ?? 0);
+        $nombreEdicion = trim($_POST['nombre_edicion'] ?? '');
+        $precioEdicion = normalizarPrecioProducto($_POST['precio_edicion'] ?? '');
+        $stockEdicion = filter_var($_POST['stock_edicion'] ?? null, FILTER_VALIDATE_INT);
+        $fechaEdicion = trim($_POST['fecha_edicion'] ?? '');
+        $fechaValida = DateTime::createFromFormat('Y-m-d\TH:i', $fechaEdicion);
+        if ($productoIdEdicion > 0 && $nombreEdicion !== '' && $precioEdicion !== false && $precioEdicion >= 0 && $stockEdicion !== false && $stockEdicion >= 0 && $fechaValida) {
+            $fechaEdicionSql = $fechaValida->format('Y-m-d H:i:s');
+            $stmtEdicion = $conexion->prepare("UPDATE productos SET nombre = ?, precio = ?, stock = ?, fecha_creacion = ? WHERE id = ?");
+            if ($stmtEdicion) {
+                $stmtEdicion->bind_param('siisi', $nombreEdicion, $precioEdicion, $stockEdicion, $fechaEdicionSql, $productoIdEdicion);
+                $actualizadoProducto = $stmtEdicion->execute();
+                $stmtEdicion->close();
+                echo $actualizadoProducto
+                    ? '<div class="alerta-exito">Producto actualizado correctamente.</div>'
+                    : '<div class="alerta-error">No se pudo actualizar. Verifica que el nombre no esté repetido.</div>';
+            }
+        } else {
+            echo '<div class="alerta-error">Revisa el nombre, precio, stock y fecha del producto.</div>';
+        }
+    }
+
     if (isset($_POST['guardar_oferta'])) {
         $tipoOferta = $_POST['oferta_tipo'] ?? 'promocion';
         $titulo = trim($_POST['oferta_titulo'] ?? '');
         $descripcion = trim($_POST['oferta_descripcion'] ?? '');
         $categoria = $_POST['oferta_categoria'] ?? 'Piel';
         $productos = trim($_POST['oferta_productos'] ?? '');
-        $precio = (float) ($_POST['oferta_precio'] ?? 0);
+        $precio = normalizarPrecioProducto($_POST['oferta_precio'] ?? '');
+        $descuento = (float) ($_POST['oferta_descuento'] ?? 0);
+        if (!in_array($tipoOferta, ['promocion', 'combo'], true)) {
+            $tipoOferta = 'promocion';
+        }
         $carpetaOferta = $tipoOferta === 'combo' ? __DIR__ . '/../IMG/combos' : __DIR__ . '/../IMG/promociones';
         $rutaImagen = trim($_POST['imagen_galeria_ruta'] ?? '');
         if ($rutaImagen === '') {
             $rutaImagen = subirImagenProducto($_FILES['oferta_imagen'] ?? null, $carpetaOferta);
         }
 
-        if (!empty($titulo) && !empty($descripcion) && $precio >= 0 && $rutaImagen !== '') {
+        $categoriasOfertaPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios', 'Perfumes'];
+        $categoriaValida = $tipoOferta === 'combo' || in_array($categoria, $categoriasOfertaPermitidas, true);
+        $rutaImagenReal = $rutaImagen !== '' ? realpath(dirname(__DIR__) . '/' . $rutaImagen) : false;
+        $directorioImagenes = realpath(dirname(__DIR__) . '/IMG');
+        $imagenValida = $rutaImagenReal && $directorioImagenes && strpos($rutaImagenReal, $directorioImagenes . DIRECTORY_SEPARATOR) === 0;
+
+        if ($titulo !== '' && strlen($titulo) <= 150 && $descripcion !== '' && $categoriaValida && $precio !== false && $descuento >= 0 && $descuento <= 100 && $imagenValida) {
             if ($tipoOferta === 'combo') {
-                $stmt = $conexion->prepare("INSERT INTO combos (nombre, descripcion, productos, precio, imagen, activo, administrador_id) VALUES (?, ?, ?, ?, ?, 1, ?)");
-                $stmt->bind_param('sssdsi', $titulo, $descripcion, $productos, $precio, $rutaImagen, $administradorId);
+                $stmt = $conexion->prepare("INSERT INTO combos (nombre, descripcion, productos, precio, descuento, imagen, activo, administrador_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)");
+                if ($stmt) $stmt->bind_param('sssidsi', $titulo, $descripcion, $productos, $precio, $descuento, $rutaImagen, $administradorId);
             } else {
-                $stmt = $conexion->prepare("INSERT INTO promociones (titulo, descripcion, categoria, precio, imagen, activo, administrador_id) VALUES (?, ?, ?, ?, ?, 1, ?)");
-                $stmt->bind_param('sssdsi', $titulo, $descripcion, $categoria, $precio, $rutaImagen, $administradorId);
+                $stmt = $conexion->prepare("INSERT INTO promociones (titulo, descripcion, categoria, precio, descuento, imagen, activo, administrador_id) VALUES (?, ?, ?, ?, ?, ?, 1, ?)");
+                if ($stmt) $stmt->bind_param('sssidsi', $titulo, $descripcion, $categoria, $precio, $descuento, $rutaImagen, $administradorId);
             }
-            $guardado = $stmt->execute();
-            $comboId = $tipoOferta === 'combo' ? (int) $conexion->insert_id : 0;
-            $stmt->close();
+            $guardado = $stmt && $stmt->execute();
+            $ofertaId = $guardado ? (int) $conexion->insert_id : 0;
+            $comboId = $guardado && $tipoOferta === 'combo' ? (int) $conexion->insert_id : 0;
+            if ($stmt) $stmt->close();
             if ($guardado && $tipoOferta === 'combo' && $comboId > 0 && $productos !== '') {
                 $buscarProductoCombo = $conexion->prepare("SELECT id FROM productos WHERE nombre = ? LIMIT 1");
                 $insertarProductoCombo = $conexion->prepare("INSERT IGNORE INTO combo_productos (combo_id, producto_id, cantidad) VALUES (?, ?, 1)");
@@ -800,12 +1074,16 @@ include("header-admin.php");
                 if ($insertarProductoCombo) $insertarProductoCombo->close();
             }
             if ($guardado) {
+                $precioNotificacion = round($precio * (100 - $descuento) / 100, 2);
+                if (!notificarOfertaNuevosUsuarios($conexion, $tipoOferta, $ofertaId, $titulo, $descripcion, $precioNotificacion, $rutaImagen)) {
+                    error_log('No se pudieron crear las notificaciones para la nueva oferta #' . $ofertaId . '.');
+                }
                 echo '<div class="alerta-exito">' . ($tipoOferta === 'combo' ? 'Combo' : 'Promoción') . ' agregado correctamente.</div>';
             } else {
                 echo '<div class="alerta-error">No se pudo guardar la oferta. Verifique los datos e inténtelo nuevamente.</div>';
             }
         } else {
-            echo '<div class="alerta-error">Completa los campos y sube una imagen válida.</div>';
+            echo '<div class="alerta-error">Revisa el título, descripción, categoría, precio en COP (ej. 140.000), descuento y la imagen. La imagen debe ser válida y pesar máximo 5 MB.</div>';
         }
     }
 
@@ -815,29 +1093,46 @@ include("header-admin.php");
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>N.º</th>
                     <th>Nombre</th>
                     <th>Precio</th>
                     <th>Stock</th>
                     <th>Fecha Creación</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
                 $resultado = mysqli_query($conexion, "SELECT * FROM productos ORDER BY id ASC");
                 if (mysqli_num_rows($resultado) > 0) {
+                    $numeroProducto = 0;
                     while ($row = mysqli_fetch_assoc($resultado)) {
-                        $stock_color = $row['stock'] == 0 ? 'color: #dc3545;' : '';
-                        echo "<tr>
-                            <td><strong>#{$row['id']}</strong></td>
-                            <td>" . htmlspecialchars($row['nombre']) . "</td>
-                            <td>\$" . number_format($row['precio'], 0, ',', '.') . "</td>
-                            <td style=\"$stock_color\"><strong>{$row['stock']}</strong> unidades</td>
-                            <td>" . date('d/m/Y', strtotime($row['fecha_creacion'])) . "</td>
-                        </tr>";
+                        $numeroProducto++;
+                        $productoIdFila = (int) $row['id'];
+                        $formularioFila = 'editar-producto-' . $productoIdFila;
+                        $nombreFila = htmlspecialchars($row['nombre'], ENT_QUOTES, 'UTF-8');
+                        $stockColor = (int) $row['stock'] === 0 ? 'color: #dc3545;' : '';
+                        ?>
+                        <tr>
+                            <td><strong><?php echo $numeroProducto; ?></strong></td>
+                            <td><span class="valor-visible"><?php echo $nombreFila; ?></span><input class="campo-edicion" name="nombre_edicion" form="<?php echo $formularioFila; ?>" type="text" value="<?php echo $nombreFila; ?>" required></td>
+                            <td><span class="valor-visible">$<?php echo number_format((float) $row['precio'], 0, ',', '.'); ?></span><input class="campo-edicion" name="precio_edicion" form="<?php echo $formularioFila; ?>" type="text" inputmode="numeric" pattern="[0-9.,]+" value="<?php echo number_format((float) $row['precio'], 0, '', '.'); ?>" required></td>
+                            <td style="<?php echo $stockColor; ?>"><span class="valor-visible"><strong><?php echo (int) $row['stock']; ?></strong> unidades</span><input class="campo-edicion" name="stock_edicion" form="<?php echo $formularioFila; ?>" type="number" min="0" value="<?php echo (int) $row['stock']; ?>" required></td>
+                            <td><span class="valor-visible"><?php echo date('d/m/Y H:i', strtotime($row['fecha_creacion'])); ?></span><input class="campo-edicion" name="fecha_edicion" form="<?php echo $formularioFila; ?>" type="datetime-local" value="<?php echo date('Y-m-d\TH:i', strtotime($row['fecha_creacion'])); ?>" required></td>
+                            <td>
+                                <form id="<?php echo $formularioFila; ?>" method="POST">
+                                    <input type="hidden" name="producto_id" value="<?php echo $productoIdFila; ?>">
+                                    <input type="hidden" name="actualizar_producto" value="1">
+                                    <button class="editar-fila" type="button" aria-label="Editar producto" title="Editar">✎</button>
+                                    <button class="guardar-fila" type="submit">Guardar</button>
+                                    <button class="cancelar-fila" type="button">Cancelar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php
                     }
                 } else {
-                    echo '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #999;">No hay productos registrados</td></tr>';
+                    echo '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #999;">No hay productos registrados</td></tr>';
                 }
                 ?>
             </tbody>
@@ -847,7 +1142,7 @@ include("header-admin.php");
 
 <script>
     function formatearPrecio(valor) {
-        const numero = Number(valor || 0);
+        const numero = Number(String(valor || 0).replace(/[.,]/g, ''));
         return new Intl.NumberFormat('es-CO', {
             style: 'currency',
             currency: 'COP',
@@ -936,7 +1231,16 @@ include("header-admin.php");
     const cabeceraPreview = document.getElementById('vista-previa-cabecera');
     const overlayGaleria = document.getElementById('galeria-overlay');
     const cerrarGaleria = document.getElementById('cerrar-galeria');
+    const overlayGaleriaProductos = document.getElementById('galeria-productos-overlay');
+    const cerrarGaleriaProductos = document.getElementById('cerrar-galeria-productos');
+    const botonBuscarImagenProducto = document.getElementById('buscar-imagen-producto');
+    const inputImagenProducto = document.getElementById('producto-imagen');
+    const botonBuscarImagenOferta = document.getElementById('buscar-imagen-oferta');
+    const inputImagenOferta = document.getElementById('oferta-imagen');
     let destinoGaleria = null;
+
+    botonBuscarImagenProducto?.addEventListener('click', () => inputImagenProducto?.click());
+    botonBuscarImagenOferta?.addEventListener('click', () => inputImagenOferta?.click());
 
     function abrirPreview(formId) {
         overlayPreview.classList.add('visible');
@@ -966,26 +1270,85 @@ include("header-admin.php");
 
     document.querySelectorAll('.selector-galeria').forEach((boton) => {
         boton.addEventListener('click', () => {
+            if (!boton.dataset.galeriaTarget) return;
             destinoGaleria = {
                 campo: boton.dataset.galeriaTarget,
                 preview: boton.dataset.galeriaPreview
             };
-            overlayGaleria.classList.add('visible');
+            const selectorProductos = boton.dataset.galeriaSource === 'productos';
+            (selectorProductos ? overlayGaleriaProductos : overlayGaleria).classList.add('visible');
         });
     });
 
-    document.querySelectorAll('.usar-imagen-galeria').forEach((boton) => {
+    document.querySelectorAll('.usar-imagen-galeria, .usar-imagen-producto').forEach((boton) => {
         boton.addEventListener('click', () => {
             if (!destinoGaleria) return;
             const campoRuta = document.getElementById(destinoGaleria.campo);
             const etiqueta = document.getElementById(destinoGaleria.preview);
+            const imagenPreview = document.getElementById(destinoGaleria.preview.replace('-preview', '-elegida'));
             if (campoRuta) campoRuta.value = boton.dataset.ruta;
             if (etiqueta) etiqueta.textContent = boton.dataset.nombre;
+            if (imagenPreview) {
+                imagenPreview.src = '../' + boton.dataset.ruta;
+                imagenPreview.style.display = 'block';
+            }
             const botonFormulario = document.querySelector('[data-galeria-target="' + destinoGaleria.campo + '"]');
-            if (botonFormulario) botonFormulario.textContent = boton.dataset.nombre;
+            if (botonFormulario) botonFormulario.textContent = 'Seleccionar imagen';
             overlayGaleria.classList.remove('visible');
+            overlayGaleriaProductos.classList.remove('visible');
         });
     });
+
+    document.querySelectorAll('.formulario-producto input[type="file"][accept="image/*"]').forEach((input) => {
+        if (input.id === 'imagen-galeria-subir') return;
+        input.addEventListener('change', () => {
+            const formulario = input.closest('form');
+            const imagenPreview = formulario?.querySelector('.imagen-elegida-preview');
+            const campoRuta = formulario?.querySelector('input[name="imagen_galeria_ruta"]');
+            const etiqueta = formulario?.querySelector('.ruta-imagen-seleccionada');
+            if (input.files?.[0] && imagenPreview) {
+                imagenPreview.src = URL.createObjectURL(input.files[0]);
+                imagenPreview.style.display = 'block';
+                if (campoRuta) campoRuta.value = '';
+                if (etiqueta) etiqueta.textContent = input.files[0].name;
+            }
+        });
+    });
+
+    document.querySelectorAll('.editar-fila').forEach((boton) => {
+        boton.addEventListener('click', () => boton.closest('tr')?.classList.add('editando'));
+    });
+
+    document.querySelectorAll('.cancelar-fila').forEach((boton) => {
+        boton.addEventListener('click', () => {
+            const fila = boton.closest('tr');
+            if (!fila) return;
+            fila.querySelectorAll('.campo-edicion').forEach((campo) => campo.value = campo.defaultValue);
+            fila.classList.remove('editando');
+        });
+    });
+
+    document.querySelectorAll('[data-confirm-delete]').forEach((formulario) => {
+        formulario.addEventListener('submit', (event) => {
+            const tituloSeleccionado = formulario.querySelector('[name="elemento_eliminar"]')?.selectedOptions[0]?.textContent || '';
+            if (!window.confirm('¿Eliminar "' + tituloSeleccionado + '"? Esta acción no se puede deshacer.')) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    const tipoOfertaSelect = document.getElementById('oferta-tipo');
+    const categoriaOfertaSelect = document.getElementById('oferta-categoria');
+    const productosOfertaInput = document.getElementById('oferta-productos');
+    function actualizarCamposOferta() {
+        const esCombo = tipoOfertaSelect.value === 'combo';
+        categoriaOfertaSelect.disabled = esCombo;
+        categoriaOfertaSelect.required = !esCombo;
+        categoriaOfertaSelect.hidden = esCombo;
+        productosOfertaInput.hidden = !esCombo;
+    }
+    tipoOfertaSelect.addEventListener('change', actualizarCamposOferta);
+    actualizarCamposOferta();
 
     document.getElementById('imagen-galeria-subir').addEventListener('change', (event) => {
         const nombreImagen = document.getElementById('nombre-imagen-galeria');
@@ -996,8 +1359,16 @@ include("header-admin.php");
         overlayGaleria.classList.remove('visible');
     });
 
+    cerrarGaleriaProductos.addEventListener('click', () => {
+        overlayGaleriaProductos.classList.remove('visible');
+    });
+
     overlayGaleria.addEventListener('click', (event) => {
         if (event.target === overlayGaleria) overlayGaleria.classList.remove('visible');
+    });
+
+    overlayGaleriaProductos.addEventListener('click', (event) => {
+        if (event.target === overlayGaleriaProductos) overlayGaleriaProductos.classList.remove('visible');
     });
 
     let arrastrando = false;

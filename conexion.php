@@ -98,12 +98,101 @@ function asegurarCamposProducto($conexion) {
 
 asegurarCamposProducto($conexion);
 
+$tablaPedidosEntrega = mysqli_query($conexion, "SHOW TABLES LIKE 'pedidos'");
+if ($tablaPedidosEntrega && mysqli_num_rows($tablaPedidosEntrega) > 0) {
+    $columnasPedido = [
+        'datos_entrega' => 'ALTER TABLE pedidos ADD COLUMN datos_entrega TEXT NULL AFTER metodo_pago',
+        'observacion_inventario' => 'ALTER TABLE pedidos ADD COLUMN observacion_inventario TEXT NULL AFTER datos_entrega',
+        'correo_usuario_enviado' => 'ALTER TABLE pedidos ADD COLUMN correo_usuario_enviado TINYINT(1) NOT NULL DEFAULT 0 AFTER observacion_inventario',
+        'correo_admin_enviado' => 'ALTER TABLE pedidos ADD COLUMN correo_admin_enviado TINYINT(1) NOT NULL DEFAULT 0 AFTER correo_usuario_enviado',
+        'fecha_pago' => 'ALTER TABLE pedidos ADD COLUMN fecha_pago TIMESTAMP NULL DEFAULT NULL AFTER correo_admin_enviado',
+        'descuento' => 'ALTER TABLE pedidos ADD COLUMN descuento INT UNSIGNED NOT NULL DEFAULT 0 AFTER total',
+        'puntos_usados' => 'ALTER TABLE pedidos ADD COLUMN puntos_usados INT UNSIGNED NOT NULL DEFAULT 0 AFTER descuento',
+        'beneficio_solicitud_id' => 'ALTER TABLE pedidos ADD COLUMN beneficio_solicitud_id INT NULL AFTER puntos_usados',
+    ];
+    foreach ($columnasPedido as $nombreColumna => $sqlColumna) {
+        $columnaExiste = mysqli_query($conexion, "SHOW COLUMNS FROM pedidos LIKE '" . mysqli_real_escape_string($conexion, $nombreColumna) . "'");
+        if ($columnaExiste && mysqli_num_rows($columnaExiste) === 0 && !mysqli_query($conexion, $sqlColumna)) {
+            error_log('No se pudo agregar la columna ' . $nombreColumna . ' a pedidos: ' . mysqli_error($conexion));
+        }
+    }
+}
+
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS notificaciones_usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    tipo VARCHAR(30) NOT NULL DEFAULT 'promocion',
+    oferta_tipo VARCHAR(30) NULL,
+    oferta_id INT NULL,
+    titulo VARCHAR(150) NOT NULL,
+    descripcion TEXT NOT NULL,
+    precio DECIMAL(10,2) NULL,
+    imagen VARCHAR(255) NULL,
+    leida TINYINT(1) NOT NULL DEFAULT 0,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_notificacion_oferta (usuario_id, tipo, oferta_tipo, oferta_id),
+    KEY idx_notificacion_usuario_fecha (usuario_id, fecha_creacion),
+    CONSTRAINT fk_notificacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB");
+
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS puntos_movimientos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    pedido_id INT NULL,
+    tipo ENUM('compra', 'canje', 'obsequio') NOT NULL,
+    puntos INT NOT NULL,
+    referencia VARCHAR(120) NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_movimiento_puntos_referencia (referencia),
+    KEY idx_movimiento_puntos_usuario (usuario_id, fecha_creacion),
+    CONSTRAINT fk_puntos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_puntos_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE SET NULL
+) ENGINE=InnoDB");
+
+mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS solicitudes_beneficios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    tipo ENUM('descuento', 'obsequio') NOT NULL,
+    estado ENUM('solicitado', 'reservado', 'completado', 'cancelado') NOT NULL DEFAULT 'solicitado',
+    puntos INT UNSIGNED NOT NULL,
+    pedido_id INT NULL,
+    fecha_solicitud TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_solicitud_beneficio_usuario (usuario_id, tipo, estado),
+    KEY idx_solicitud_beneficio_pedido (pedido_id),
+    CONSTRAINT fk_solicitud_beneficio_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_solicitud_beneficio_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE SET NULL
+) ENGINE=InnoDB");
+
+require_once __DIR__ . '/beneficios.php';
+
+$tablaProductoDestacado = mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS producto_destacado (
+    id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+    producto_id INT NULL,
+    descripcion TEXT NOT NULL,
+    activo TINYINT(1) NOT NULL DEFAULT 0,
+    fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_producto_destacado_producto (producto_id),
+    CONSTRAINT fk_producto_destacado_producto FOREIGN KEY (producto_id)
+        REFERENCES productos(id) ON DELETE SET NULL
+) ENGINE=InnoDB");
+if (!$tablaProductoDestacado) {
+    error_log('No se pudo asegurar la tabla producto_destacado: ' . mysqli_error($conexion));
+} else {
+    $registroProductoDestacado = mysqli_query($conexion, "INSERT IGNORE INTO producto_destacado (id, producto_id, descripcion, activo) VALUES (1, NULL, '', 0)");
+    if (!$registroProductoDestacado) {
+        error_log('No se pudo inicializar producto_destacado: ' . mysqli_error($conexion));
+    }
+}
+
 mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS promociones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(150) NOT NULL,
     descripcion TEXT,
     categoria VARCHAR(50) NOT NULL,
     precio DECIMAL(10,2) NOT NULL DEFAULT 0,
+    descuento DECIMAL(5,2) NOT NULL DEFAULT 0,
     imagen VARCHAR(255) NULL,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -114,11 +203,24 @@ mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS combos (
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT,
     precio DECIMAL(10,2) NOT NULL DEFAULT 0,
+    descuento DECIMAL(5,2) NOT NULL DEFAULT 0,
     imagen VARCHAR(255) NULL,
     productos TEXT,
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB");
+
+foreach (['promociones', 'combos'] as $tablaOfertas) {
+    $columnaDescuento = mysqli_query($conexion, "SHOW COLUMNS FROM `$tablaOfertas` LIKE 'descuento'");
+    if ($columnaDescuento && mysqli_num_rows($columnaDescuento) === 0) {
+        mysqli_query($conexion, "ALTER TABLE `$tablaOfertas` ADD COLUMN descuento DECIMAL(5,2) NOT NULL DEFAULT 0 AFTER precio");
+    }
+
+    $columnaAdministradorOferta = mysqli_query($conexion, "SHOW COLUMNS FROM `$tablaOfertas` LIKE 'administrador_id'");
+    if ($columnaAdministradorOferta && mysqli_num_rows($columnaAdministradorOferta) === 0) {
+        mysqli_query($conexion, "ALTER TABLE `$tablaOfertas` ADD COLUMN administrador_id INT NULL");
+    }
+}
 
 mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS reseñas_productos (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -158,10 +260,17 @@ mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS reportes_reseñas (
 function ensureAdminUser($conexion) {
     $correoAdmin = 'tachiandrade79@gmail.com';
     $nombreAdmin = 'Tachi Andrade';
-    mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS configuracion_admin (id TINYINT NOT NULL PRIMARY KEY, inicializado TINYINT(1) NOT NULL DEFAULT 0) ENGINE=InnoDB");
+    $claveInicialAdmin = getenv('ADMIN_INITIAL_PASSWORD');
+    $claveInicialValida = is_string($claveInicialAdmin) && strlen($claveInicialAdmin) >= 12 && strlen($claveInicialAdmin) <= 72;
+    mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS configuracion_admin (id TINYINT NOT NULL PRIMARY KEY, inicializado TINYINT(1) NOT NULL DEFAULT 0, clave_inicial_configurada TINYINT(1) NOT NULL DEFAULT 0) ENGINE=InnoDB");
     mysqli_query($conexion, "INSERT IGNORE INTO configuracion_admin (id, inicializado) VALUES (1, 0)");
-    $estado = mysqli_query($conexion, "SELECT inicializado FROM configuracion_admin WHERE id = 1");
-    $inicializarCredenciales = $estado && (int) mysqli_fetch_assoc($estado)['inicializado'] === 0;
+    $columnaClaveConfigurada = mysqli_query($conexion, "SHOW COLUMNS FROM configuracion_admin LIKE 'clave_inicial_configurada'");
+    if ($columnaClaveConfigurada && mysqli_num_rows($columnaClaveConfigurada) === 0) {
+        mysqli_query($conexion, "ALTER TABLE configuracion_admin ADD COLUMN clave_inicial_configurada TINYINT(1) NOT NULL DEFAULT 0");
+    }
+    $estado = mysqli_query($conexion, "SELECT inicializado, clave_inicial_configurada FROM configuracion_admin WHERE id = 1");
+    $configuracionAdmin = $estado ? mysqli_fetch_assoc($estado) : null;
+    $inicializarCredenciales = $configuracionAdmin && ((int) $configuracionAdmin['inicializado'] === 0 || (int) $configuracionAdmin['clave_inicial_configurada'] !== 1);
     mysqli_query($conexion, "UPDATE usuarios SET rol = 'usuario' WHERE rol = 'admin' AND LOWER(correo) <> 'tachiandrade79@gmail.com'");
     $stmt = mysqli_prepare($conexion, 'SELECT id, nombre, correo, contrasena, rol FROM usuarios WHERE LOWER(correo) = ? LIMIT 1');
     if (!$stmt) {
@@ -175,13 +284,27 @@ function ensureAdminUser($conexion) {
     mysqli_stmt_close($stmt);
 
     if ($admin) {
-        if ($inicializarCredenciales) {
-            $hashAdmin = password_hash('123456', PASSWORD_BCRYPT);
+        if ($inicializarCredenciales && $claveInicialValida) {
+            $hashAdmin = password_hash($claveInicialAdmin, PASSWORD_DEFAULT);
             $actualizar = mysqli_prepare($conexion, "UPDATE usuarios SET nombre = ?, correo = ?, contrasena = ?, rol = 'admin' WHERE id = ?");
             if ($actualizar) {
                 mysqli_stmt_bind_param($actualizar, 'sssi', $nombreAdmin, $correoAdmin, $hashAdmin, $admin['id']);
-                mysqli_stmt_execute($actualizar);
+                $actualizado = mysqli_stmt_execute($actualizar);
                 mysqli_stmt_close($actualizar);
+                if ($actualizado) {
+                    mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1, clave_inicial_configurada = 1 WHERE id = 1");
+                }
+            }
+        } elseif ($inicializarCredenciales && (int) $configuracionAdmin['clave_inicial_configurada'] === 0) {
+            $hashInutilizable = password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
+            $bloquearClavePredeterminada = mysqli_prepare($conexion, 'UPDATE usuarios SET contrasena = ? WHERE id = ?');
+            if ($bloquearClavePredeterminada) {
+                mysqli_stmt_bind_param($bloquearClavePredeterminada, 'si', $hashInutilizable, $admin['id']);
+                $bloqueado = mysqli_stmt_execute($bloquearClavePredeterminada);
+                mysqli_stmt_close($bloquearClavePredeterminada);
+                if ($bloqueado) {
+                    mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1, clave_inicial_configurada = 2 WHERE id = 1");
+                }
             }
         } elseif ($admin['rol'] !== 'admin' || $admin['nombre'] !== $nombreAdmin || $admin['correo'] !== $correoAdmin) {
             $actualizar = mysqli_prepare($conexion, "UPDATE usuarios SET nombre = ?, correo = ?, rol = 'admin' WHERE id = ?");
@@ -191,54 +314,24 @@ function ensureAdminUser($conexion) {
                 mysqli_stmt_close($actualizar);
             }
         }
-        if ($inicializarCredenciales) mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1 WHERE id = 1");
+        if ($inicializarCredenciales && !$claveInicialValida) {
+            error_log('Administrador no inicializado: configura ADMIN_INITIAL_PASSWORD con entre 12 y 72 caracteres.');
+        }
         return;
     }
 
-    $hashAdmin = password_hash('123456', PASSWORD_BCRYPT);
+    if (!$claveInicialValida) {
+        error_log('Administrador no creado: configura ADMIN_INITIAL_PASSWORD con entre 12 y 72 caracteres.');
+        return;
+    }
+
+    $hashAdmin = password_hash($claveInicialAdmin, PASSWORD_DEFAULT);
     $insertar = mysqli_prepare($conexion, "INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (?, ?, ?, 'admin')");
     if ($insertar) {
         mysqli_stmt_bind_param($insertar, 'sss', $nombreAdmin, $correoAdmin, $hashAdmin);
         $insertado = mysqli_stmt_execute($insertar);
         mysqli_stmt_close($insertar);
-        if ($insertado) mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1 WHERE id = 1");
-    }
-}
-
-function ensureDefaultUser($conexion) {
-    $userName = 'Tatiana';
-    $userEmail = 'htatiana089@gmail.com';
-    $userPassword = '123456';
-    $userRole = 'usuario';
-    $passwordHash = password_hash($userPassword, PASSWORD_BCRYPT);
-
-    $sql = "SELECT id, nombre, contrasena FROM usuarios WHERE correo = ? LIMIT 1";
-    if ($stmt = mysqli_prepare($conexion, $sql)) {
-        mysqli_stmt_bind_param($stmt, "s", $userEmail);
-        mysqli_stmt_execute($stmt);
-        $resultado = mysqli_stmt_get_result($stmt);
-
-        if ($resultado && $resultado->num_rows > 0) {
-            $usuario = $resultado->fetch_assoc();
-            if ($usuario['nombre'] !== $userName || !password_verify($userPassword, $usuario['contrasena'])) {
-                $actualizar = mysqli_prepare($conexion, "UPDATE usuarios SET nombre = ?, contrasena = ?, rol = ? WHERE id = ?");
-                if ($actualizar) {
-                    mysqli_stmt_bind_param($actualizar, "sssi", $userName, $passwordHash, $userRole, $usuario['id']);
-                    mysqli_stmt_execute($actualizar);
-                    mysqli_stmt_close($actualizar);
-                }
-            }
-            mysqli_stmt_close($stmt);
-            return;
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    $insertar = mysqli_prepare($conexion, "INSERT INTO usuarios (nombre, correo, contrasena, rol) VALUES (?, ?, ?, ?)");
-    if ($insertar) {
-        mysqli_stmt_bind_param($insertar, "ssss", $userName, $userEmail, $passwordHash, $userRole);
-        mysqli_stmt_execute($insertar);
-        mysqli_stmt_close($insertar);
+        if ($insertado) mysqli_query($conexion, "UPDATE configuracion_admin SET inicializado = 1, clave_inicial_configurada = 1 WHERE id = 1");
     }
 }
 
@@ -380,5 +473,4 @@ foreach ($ordenesSesionesBase as $ordenSesionBase) {
 }
 
 ensureAdminUser($conexion);
-ensureDefaultUser($conexion);
 ?>

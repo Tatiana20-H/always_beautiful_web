@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS usuarios (
     genero ENUM('hombre', 'mujer') NULL,
     codigo_recuperacion VARCHAR(6) NULL,
     codigo_expira DATETIME NULL,
+    correo_verificado TINYINT(1) NOT NULL DEFAULT 1,
+    codigo_verificacion VARCHAR(6) NULL,
+    verificacion_expira DATETIME NULL,
     rol ENUM('usuario', 'admin') NOT NULL DEFAULT 'usuario',
     foto_perfil VARCHAR(255) NULL,
     carrito_json LONGTEXT NULL,
@@ -23,6 +26,23 @@ CREATE TABLE IF NOT EXISTS usuarios (
     activo TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (id),
     UNIQUE KEY uq_usuarios_correo (correo)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS notificaciones_usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    tipo VARCHAR(30) NOT NULL DEFAULT 'promocion',
+    oferta_tipo VARCHAR(30) NULL,
+    oferta_id INT NULL,
+    titulo VARCHAR(150) NOT NULL,
+    descripcion TEXT NOT NULL,
+    precio DECIMAL(10,2) NULL,
+    imagen VARCHAR(255) NULL,
+    leida TINYINT(1) NOT NULL DEFAULT 0,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_notificacion_oferta (usuario_id, tipo, oferta_tipo, oferta_id),
+    KEY idx_notificacion_usuario_fecha (usuario_id, fecha_creacion),
+    CONSTRAINT fk_notificacion_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Catálogo central usado por el sitio y el panel administrativo.
@@ -66,10 +86,18 @@ CREATE TABLE IF NOT EXISTS pedidos (
     id INT NOT NULL AUTO_INCREMENT,
     usuario_id INT NOT NULL,
     total INT UNSIGNED NOT NULL,
+    descuento INT UNSIGNED NOT NULL DEFAULT 0,
+    puntos_usados INT UNSIGNED NOT NULL DEFAULT 0,
+    beneficio_solicitud_id INT NULL,
     estado VARCHAR(50) NOT NULL DEFAULT 'pendiente',
     referencia_pago VARCHAR(100) NULL,
     transaccion_id VARCHAR(100) NULL,
     metodo_pago VARCHAR(40) NULL,
+    datos_entrega TEXT NULL,
+    observacion_inventario TEXT NULL,
+    correo_usuario_enviado TINYINT(1) NOT NULL DEFAULT 0,
+    correo_admin_enviado TINYINT(1) NOT NULL DEFAULT 0,
+    fecha_pago TIMESTAMP NULL DEFAULT NULL,
     fecha_pedido TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_pedidos_referencia (referencia_pago),
@@ -97,6 +125,36 @@ CREATE TABLE IF NOT EXISTS detalles_pedido (
         REFERENCES productos(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS puntos_movimientos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    pedido_id INT NULL,
+    tipo ENUM('compra', 'canje', 'obsequio') NOT NULL,
+    puntos INT NOT NULL,
+    referencia VARCHAR(120) NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_movimiento_puntos_referencia (referencia),
+    KEY idx_movimiento_puntos_usuario (usuario_id, fecha_creacion),
+    CONSTRAINT fk_puntos_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_puntos_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS solicitudes_beneficios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    tipo ENUM('descuento', 'obsequio') NOT NULL,
+    estado ENUM('solicitado', 'reservado', 'completado', 'cancelado') NOT NULL DEFAULT 'solicitado',
+    puntos INT UNSIGNED NOT NULL,
+    pedido_id INT NULL,
+    fecha_solicitud TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_solicitud_beneficio_usuario (usuario_id, tipo, estado),
+    KEY idx_solicitud_beneficio_pedido (pedido_id),
+    CONSTRAINT fk_solicitud_beneficio_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_solicitud_beneficio_pedido FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS historial_actividades (
     id INT NOT NULL AUTO_INCREMENT,
     usuario_id INT NOT NULL,
@@ -118,6 +176,7 @@ CREATE TABLE IF NOT EXISTS promociones (
     descripcion TEXT NULL,
     categoria VARCHAR(50) NOT NULL,
     precio DECIMAL(10,2) NOT NULL DEFAULT 0,
+    descuento DECIMAL(5,2) NOT NULL DEFAULT 0,
     imagen VARCHAR(255) NULL,
     activo TINYINT(1) NOT NULL DEFAULT 1,
     administrador_id INT NULL,
@@ -133,6 +192,7 @@ CREATE TABLE IF NOT EXISTS combos (
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT NULL,
     precio DECIMAL(10,2) NOT NULL DEFAULT 0,
+    descuento DECIMAL(5,2) NOT NULL DEFAULT 0,
     imagen VARCHAR(255) NULL,
     productos TEXT NULL,
     activo TINYINT(1) NOT NULL DEFAULT 1,

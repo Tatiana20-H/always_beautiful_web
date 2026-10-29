@@ -1,7 +1,7 @@
 FROM php:8.2-apache
 
-RUN apt-get update && apt-get install -y --no-install-recommends unzip \
-	&& docker-php-ext-install mysqli pdo_mysql \
+RUN apt-get update && apt-get install -y --no-install-recommends unzip libcurl4-openssl-dev \
+	&& docker-php-ext-install mysqli pdo_mysql curl \
 	&& rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html

@@ -81,6 +81,21 @@ if (!$enviado) {
     $errorFormulario('No fue posible enviar el mensaje. Inténtalo nuevamente.');
 }
 
+$correoAdministrador = correoAdministradorNotificaciones();
+$urlBandejaAdministrador = urlAplicacion('/Administrador/mensajes.php?filtro=no_leido');
+$cuerpoAvisoAdministrador = "Hay un nuevo mensaje en Always Beautiful.\n\n";
+$cuerpoAvisoAdministrador .= "Nombre: $nombre\nCorreo registrado: $correo\nAsunto: $asunto\n\nMensaje:\n$mensaje\n\n";
+$cuerpoAvisoAdministrador .= "Abre la bandeja de administración para responder:\n$urlBandejaAdministrador";
+enviarNotificacion($correoAdministrador, "Nuevo mensaje de $nombre - Always Beautiful", $cuerpoAvisoAdministrador);
+
+$urlBandejaUsuario = urlAplicacion('/mis_respuestas.php');
+$urlRegistro = urlAplicacion('/registro.php');
+$cuerpoConfirmacionUsuario = "Hola $nombre,\n\nRecibimos tu mensaje sobre: $asunto. El equipo de Always Beautiful te responderá pronto.\n\n";
+$cuerpoConfirmacionUsuario .= "Puedes consultar y responder desde tu bandeja:\n$urlBandejaUsuario\n\n";
+$cuerpoConfirmacionUsuario .= "Si aún no tienes cuenta, regístrate usando este mismo correo para vincular la conversación:\n$urlRegistro\n\n";
+$cuerpoConfirmacionUsuario .= "Saludos,\nEquipo Always Beautiful";
+enviarNotificacion($correo, 'Recibimos tu mensaje - Always Beautiful', $cuerpoConfirmacionUsuario);
+
 unset($_SESSION['datos_contacto_pendientes']);
 $_SESSION['notificacion_contacto'] = ['tipo' => 'exito', 'mensaje' => 'Tu mensaje fue enviado. El equipo de Always Beautiful ya puede verlo en la bandeja de administración.'];
 header('Location: formulario.php');

@@ -5,7 +5,7 @@ $conexion = $GLOBALS['conexion'];
 require_once __DIR__ . '/migracion_respuestas_leidas.php';
 
 if (empty($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') === 'admin') {
-    header('Location: index.php');
+    header('Location: ' . (($_SESSION['rol'] ?? '') === 'admin' ? 'Administrador/index.php' : 'index.php'));
     exit();
 }
 
@@ -41,13 +41,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $guardado = mysqli_stmt_execute($stmtRespuesta);
                 mysqli_stmt_close($stmtRespuesta);
                 if ($guardado) {
+                    $stmtMensaje = mysqli_prepare($conexion, 'SELECT nombre, correo, asunto FROM mensajes_contacto WHERE id = ? LIMIT 1');
+                    $mensajeNotificacion = null;
+                    if ($stmtMensaje) {
+                        mysqli_stmt_bind_param($stmtMensaje, 'i', $mensajeId);
+                        mysqli_stmt_execute($stmtMensaje);
+                        $mensajeNotificacion = mysqli_fetch_assoc(mysqli_stmt_get_result($stmtMensaje));
+                        mysqli_stmt_close($stmtMensaje);
+                    }
+
                     $stmtEstado = mysqli_prepare($conexion, "UPDATE mensajes_contacto SET estado = 'no_leido' WHERE id = ?");
                     if ($stmtEstado) {
                         mysqli_stmt_bind_param($stmtEstado, 'i', $mensajeId);
                         mysqli_stmt_execute($stmtEstado);
                         mysqli_stmt_close($stmtEstado);
                     }
-                    $_SESSION['mensaje_bandeja'] = 'Tu respuesta fue enviada al equipo de atención.';
+
+                    $emailAdmin = correoAdministradorNotificaciones();
+                    $urlBandejaAdmin = urlAplicacion('/Administrador/mensajes.php?filtro=no_leido');
+                    $asuntoMensaje = (string) ($mensajeNotificacion['asunto'] ?? 'tu consulta');
+                    $nombreMensaje = (string) ($mensajeNotificacion['nombre'] ?? ($_SESSION['nombre'] ?? 'Usuario'));
+                    $cuerpoAdmin = "El usuario $nombreMensaje respondió en Always Beautiful.\n\n";
+                    $cuerpoAdmin .= "Correo registrado: $correoUsuario\nAsunto: $asuntoMensaje\n\nRespuesta:\n$textoRespuesta\n\n";
+                    $cuerpoAdmin .= "Abre la bandeja para continuar la conversación:\n$urlBandejaAdmin";
+                    $correoEnviado = enviarNotificacion($emailAdmin, "Nueva respuesta de $nombreMensaje - Always Beautiful", $cuerpoAdmin);
+                    $_SESSION['mensaje_bandeja'] = $correoEnviado
+                        ? 'Tu respuesta fue enviada y se notificó al equipo de atención.'
+                        : 'Tu respuesta quedó guardada, pero no se pudo enviar el aviso por correo.';
                 } else {
                     $_SESSION['mensaje_bandeja'] = 'No fue posible enviar tu respuesta. Inténtalo de nuevo.';
                 }
@@ -154,9 +174,11 @@ $sinLeer = array_sum(array_column($conversaciones, 'respuestas_nuevas'));
                         </div>
                         <?php foreach ($conversacion['mensajes'] as $mensajeHilo): ?>
                             <?php $esRespuestaUsuario = $mensajeHilo['remitente'] === 'usuario'; ?>
-                            <div class="mensaje-hilo <?= $esRespuestaUsuario ? 'mensaje-hilo-usuario' : 'mensaje-hilo-admin' ?>">
+                            <?php $respuestaNueva = !$esRespuestaUsuario && (int) $mensajeHilo['visto_usuario'] === 0; ?>
+                            <div class="mensaje-hilo <?= $esRespuestaUsuario ? 'mensaje-hilo-usuario' : 'mensaje-hilo-admin' ?><?= $respuestaNueva ? ' mensaje-hilo-nuevo' : '' ?>">
                                 <div class="mensaje-hilo-encabezado">
-                                    <h3><?= $esRespuestaUsuario ? 'Tu respuesta' : 'Respuesta de ' . htmlspecialchars($mensajeHilo['nombre_admin'] ?: 'Administración', ENT_QUOTES, 'UTF-8') ?></h3>
+                                    <h3><?= $esRespuestaUsuario ? 'Tu respuesta' : 'Respuesta del equipo' ?></h3>
+                                    <?php if ($respuestaNueva): ?><span class="mensaje-hilo-insignia">Nueva</span><?php endif; ?>
                                     <time datetime="<?= htmlspecialchars($mensajeHilo['fecha_respuesta'], ENT_QUOTES, 'UTF-8') ?>"><?= date('d/m/Y H:i', strtotime($mensajeHilo['fecha_respuesta'])) ?></time>
                                 </div>
                                 <p><?= nl2br(htmlspecialchars($mensajeHilo['respuesta'], ENT_QUOTES, 'UTF-8')) ?></p>
@@ -167,9 +189,18 @@ $sinLeer = array_sum(array_column($conversaciones, 'respuestas_nuevas'));
                         <form method="POST" class="formulario-replica">
                             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCsrf, ENT_QUOTES, 'UTF-8') ?>">
                             <input type="hidden" name="mensaje_id" value="<?= $conversacion['id'] ?>">
-                            <label for="replica-<?= $conversacion['id'] ?>">Responder a la conversación</label>
+                            <div class="formulario-replica-encabezado">
+                                <span aria-hidden="true">↩</span>
+                                <div>
+                                    <label for="replica-<?= $conversacion['id'] ?>">Tu respuesta</label>
+                                    <small>El equipo recibirá tu mensaje en esta conversación.</small>
+                                </div>
+                            </div>
                             <textarea id="replica-<?= $conversacion['id'] ?>" name="respuesta" maxlength="5000" rows="3" placeholder="Escribe tu respuesta para el equipo..." required></textarea>
-                            <button type="submit" name="responder_mensaje" value="1">Enviar respuesta</button>
+                            <div class="formulario-replica-pie">
+                                <small>Máximo 5000 caracteres</small>
+                                <button type="submit" name="responder_mensaje" value="1">Enviar respuesta <span aria-hidden="true">→</span></button>
+                            </div>
                         </form>
                         <form method="POST" class="formulario-eliminar-conversacion" onsubmit="return confirm('¿Eliminar este mensaje y toda su conversación? Esta acción no se puede deshacer.');">
                             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCsrf, ENT_QUOTES, 'UTF-8') ?>">
@@ -189,5 +220,6 @@ $sinLeer = array_sum(array_column($conversaciones, 'respuestas_nuevas'));
         </section>
     <?php endif; ?>
 </main>
+<?php include __DIR__ . '/footer.php'; ?>
 </body>
 </html>
