@@ -154,7 +154,35 @@
             echo '<div class="alerta-error">❌ Precio y stock deben ser valores positivos</div>';
         }
     }
-    ?>
+}
+?>
+<?php
+if (isset($_POST['guardar_imagen_galeria'])) {
+    $archivoGaleria = $_FILES['imagen_galeria'] ?? null;
+    $rutaGaleria = '';
+    if ($archivoGaleria && ($archivoGaleria['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+        $carpetaGaleria = __DIR__ . '/../IMG/galeria';
+        if (!is_dir($carpetaGaleria)) {
+            mkdir($carpetaGaleria, 0777, true);
+        }
+        $nombreArchivoGaleria = str_replace('.', '_', uniqid('', true)) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', basename($archivoGaleria['name']));
+        $destinoGaleria = $carpetaGaleria . '/' . $nombreArchivoGaleria;
+        if (move_uploaded_file($archivoGaleria['tmp_name'], $destinoGaleria)) {
+            $rutaGaleria = 'IMG/galeria/' . $nombreArchivoGaleria;
+            $nombreOriginalGaleria = basename($archivoGaleria['name']);
+            $stmtImagenGaleria = mysqli_prepare($conexion, "INSERT INTO galeria_inicio (nombre, ruta, administrador_id) VALUES (?, ?, ?)");
+            if ($stmtImagenGaleria) {
+                mysqli_stmt_bind_param($stmtImagenGaleria, "ssi", $nombreOriginalGaleria, $rutaGaleria, $administradorId);
+                mysqli_stmt_execute($stmtImagenGaleria);
+                mysqli_stmt_close($stmtImagenGaleria);
+            }
+        }
+    }
+    header('Location: productos.php?galeria_abierta=1&imagen_subida=' . ($rutaGaleria !== '' ? '1' : '0'));
+    exit;
+}
+include("header-admin.php");
+?>
 
     <div class="tabla-productos">
         <table>

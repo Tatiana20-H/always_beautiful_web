@@ -251,7 +251,7 @@ body {
     position: absolute;
     z-index: 20;
     
-    top: 100%; /* 🔥 CLAVE: justo debajo */
+    top: 100%; /* CLAVE: justo debajo */
     left: 50%;
     transform: translateX(-50%);
 
@@ -277,7 +277,7 @@ body {
 /* ACTIVAR */
 
 .dropdown {
-    position: relative; /* 🔥 CLAVE */
+    position: relative; /* CLAVE */
 }
 
 .dropdown.active .submenu {
@@ -3205,7 +3205,7 @@ a,
 }
 
 
-/* 🔥 CONTENEDOR FORMULARIO */
+/* CONTENEDOR FORMULARIO */
 .formulario-container {
     display: flex;
     justify-content: center;
@@ -3213,7 +3213,7 @@ a,
     padding: 50px;
 }
 
-/* 🔥 CAJA FORMULARIO */
+/* CAJA FORMULARIO */
 .formulario {
     background: #f3c6d3;
     padding: 30px;
@@ -3306,7 +3306,7 @@ a,
     height: 80vh; /* centra verticalmente */
 }
 
-/* 🔥 CAJA DEL FORMULARIO */
+/* CAJA DEL FORMULARIO */
 .formulario {
     background: #f3c6d3;
     padding: 30px;

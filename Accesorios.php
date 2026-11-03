@@ -1,6 +1,8 @@
 <?php 
 session_start();
 include("header.php");
+include("conexion.php");
+$conexion = $GLOBALS['conexion'];
 ?>
 
 <link rel="stylesheet" href="styles.css">
@@ -14,7 +16,6 @@ function cantidadProducto($nombre){
     return $_SESSION['carrito'][$nombre]['cantidad'] ?? 0;
 }
 
-/* LISTA DE PRODUCTOS */
 $productos = [
     ["Moño", 5000, "IMG/Moño.jpg", "Moño para complementar diferentes peinados y estilos.", 4.7],
     ["Pinzas", 6000, "IMG/Pinzas.jpg", "Pinzas prácticas para sujetar y organizar el cabello.", 4.6],
@@ -26,6 +27,24 @@ $productos = [
     ["Collar", 30000, "IMG/Collar.jpg", "Collar decorativo para complementar diferentes outfits.", 4.8],
     ["Antifaz para dormir", 20000, "IMG/Antifaz.jpg", "Antifaz cómodo para ayudar a bloquear la luz durante el descanso.", 4.7]
 ];
+$normalizarNombreProducto = static function ($nombre) {
+    return function_exists('mb_strtolower') ? mb_strtolower(trim($nombre), 'UTF-8') : strtolower(trim($nombre));
+};
+$nombresProductos = [];
+foreach ($productos as $productoManual) {
+    $nombresProductos[$normalizarNombreProducto($productoManual[0])] = true;
+}
+$resultado = mysqli_query($conexion, "SELECT nombre, precio, imagen, descripcion, categoria FROM productos WHERE categoria = 'Accesorios' AND activo = 1 ORDER BY fecha_creacion DESC");
+if ($resultado) {
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $nombreNormalizado = $normalizarNombreProducto($fila['nombre']);
+        if ($nombreNormalizado === '' || isset($nombresProductos[$nombreNormalizado])) {
+            continue;
+        }
+        $nombresProductos[$nombreNormalizado] = true;
+        $productos[] = [$fila['nombre'], (int) $fila['precio'], $fila['imagen'] ?: 'IMG/default.jpg', $fila['descripcion'] ?: 'Accesorio para complementar tu estilo.', 4.7, $fila['categoria'] ?? 'Accesorios'];
+    }
+}
 ?>
 
 <?php foreach($productos as $p): ?>

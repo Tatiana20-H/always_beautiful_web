@@ -1,6 +1,8 @@
 <?php 
 session_start();
 include("header.php");
+include("conexion.php");
+$conexion = $GLOBALS['conexion'];
 ?>
 
 <link rel="stylesheet" href="styles.css">
@@ -14,7 +16,6 @@ function cantidadProducto($nombre){
     return $_SESSION['carrito'][$nombre]['cantidad'] ?? 0;
 }
 
-/* LISTA DE PRODUCTOS */
 $productos = [
     ["Shampo y Condicionador", 40000, "IMG/Shampo y Condicionador.jpg", "Shampoo y acondicionador para limpiar, hidratar y cuidar el cabello.", 4.8],
     ["Protector térmico", 25000, "IMG/Protector térmico.jpg", "Protector térmico que ayuda a proteger el cabello del calor de la plancha y el secador.", 4.7],
@@ -26,6 +27,24 @@ $productos = [
     ["Aceite para cabello", 25000, "IMG/Aceite para cabello.jpg", "Aceite para aportar brillo, suavidad e hidratación al cabello.", 4.8],
     ["Aceite de coco", 40000, "IMG/Aceite de coco.jpg", "Aceite de coco para nutrir e hidratar el cabello.", 4.9]
 ];
+$normalizarNombreProducto = static function ($nombre) {
+    return function_exists('mb_strtolower') ? mb_strtolower(trim($nombre), 'UTF-8') : strtolower(trim($nombre));
+};
+$nombresProductos = [];
+foreach ($productos as $productoManual) {
+    $nombresProductos[$normalizarNombreProducto($productoManual[0])] = true;
+}
+$resultado = mysqli_query($conexion, "SELECT nombre, precio, imagen, descripcion, categoria FROM productos WHERE categoria = 'Cabello' AND activo = 1 ORDER BY fecha_creacion DESC");
+if ($resultado) {
+    while ($fila = mysqli_fetch_assoc($resultado)) {
+        $nombreNormalizado = $normalizarNombreProducto($fila['nombre']);
+        if ($nombreNormalizado === '' || isset($nombresProductos[$nombreNormalizado])) {
+            continue;
+        }
+        $nombresProductos[$nombreNormalizado] = true;
+        $productos[] = [$fila['nombre'], (int) $fila['precio'], $fila['imagen'] ?: 'IMG/default.jpg', $fila['descripcion'] ?: 'Producto para el cuidado del cabello.', 4.8, $fila['categoria'] ?? 'Cabello'];
+    }
+}
 ?>
 
 <?php foreach($productos as $p): ?>

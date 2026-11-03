@@ -97,6 +97,7 @@ if ($stmt->execute()) {
     }
     
     // Guardar sesión del usuario
+    session_regenerate_id(true);
     $_SESSION['usuario_id'] = $usuario_id;
     $_SESSION['nombre'] = $nombre;
     $_SESSION['correo'] = $correo;

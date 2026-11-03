@@ -17,10 +17,6 @@ $password = $_POST['password'] ?? '';
 // Validaciones básicas
 $errores = [];
 
-if (empty($nombre)) {
-    $errores[] = "El nombre es requerido";
-}
-
 if (empty($correo) || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
     $errores[] = "Correo inválido";
 }
@@ -65,11 +61,20 @@ $resultado = $stmt->get_result();
 
 if ($resultado->num_rows > 0) {
     $usuario = $resultado->fetch_assoc();
+    $rolUsuario = strtolower(trim((string) ($usuario['rol'] ?? 'usuario')));
     
     // Verificar contraseña encriptada
     if (password_verify($password, $usuario['contrasena'])) {
+
+        if (strcasecmp(trim((string) $usuario['nombre']), $nombre) !== 0 || $rolSolicitado !== $rolUsuario) {
+            redirectWithLoginErrors(["Datos inválidos. Verifica tus datos y el tipo de cuenta seleccionado."], [
+                'nombre' => $nombre,
+                'correo' => $correo,
+            ]);
+        }
         
         // Login exitoso - guardar sesión
+        session_regenerate_id(true);
         $_SESSION['usuario_id'] = $usuario['id'];
         $_SESSION['nombre'] = $usuario['nombre'];
         $_SESSION['correo'] = $usuario['correo'];
@@ -92,7 +97,7 @@ if ($resultado->num_rows > 0) {
         }
         
         // Redirigir según rol
-        if ($usuario['rol'] == "admin") {
+        if ($rol === 'admin') {
             header("Location: Administrador/index.php");
         } else {
             header("Location: inicio.php");
