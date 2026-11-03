@@ -34,6 +34,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="ubicacion-container">
 
     <h2>Nuestra Ubicación 📍</h2>

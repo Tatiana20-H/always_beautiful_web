@@ -68,6 +68,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="articulos-container">
 
     <h2>Artículos de Belleza </h2>

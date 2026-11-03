@@ -1,6 +1,19 @@
 <?php
 session_start();
+include("conexion.php");
+$conexion = $GLOBALS['conexion'];
+include("wompi_config.php");
 date_default_timezone_set('America/Bogota');
+
+if (!isset($_SESSION['usuario_id'])) {
+    header('Location: inicio.php');
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ver_carrito.php');
+    exit();
+}
 
 // Crear historial si no existe
 if(!isset($_SESSION['historial'])){
@@ -23,21 +36,28 @@ foreach($_SESSION['carrito'] as $nombre => $producto){
     $totalProductos += $producto['cantidad'];
 }
 
-// GUARDAR HISTORIAL (ANTES de borrar carrito)
-$_SESSION['historial'][] = [
-    "productos" => $_SESSION['carrito'],
-    "total" => $total,
-    "cantidad_total" => $totalProductos,
-    "fecha" => date("d/m/Y"),
-    "hora" => date("H:i:s")
+if (WOMPI_PUBLIC_KEY === '' || WOMPI_INTEGRITY_SECRET === '') {
+    echo "<script>alert('Configura las claves de Wompi en wompi_config.php.'); window.location='ver_carrito.php';</script>";
+    exit();
+}
+
+$referencia = 'AB-' . (int) $_SESSION['usuario_id'] . '-' . time();
+$montoEnCentavos = (int) $total * 100;
+$firma = hash('sha256', $referencia . $montoEnCentavos . 'COP' . WOMPI_INTEGRITY_SECRET);
+$redirectUrl = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/resultado_pago.php';
+
+$_SESSION['pago_pendiente'] = [
+    'referencia' => $referencia,
+    'monto' => $montoEnCentavos,
+    'carrito' => $_SESSION['carrito']
 ];
 
-// Ahora sí vaciar carrito
-unset($_SESSION['carrito']);
+$checkoutUrl = wompiBaseUrl() . '/p/?public-key=' . rawurlencode(WOMPI_PUBLIC_KEY)
+    . '&currency=COP&amount-in-cents=' . $montoEnCentavos
+    . '&reference=' . rawurlencode($referencia)
+    . '&signature:integrity=' . $firma
+    . '&redirect-url=' . rawurlencode($redirectUrl);
 
-// Redirigir
-echo "<script>
-alert('Pago finalizado, gracias por su compra 💖');
-window.location='perfil.php';
-</script>";
+header('Location: ' . $checkoutUrl);
+exit();
 ?>

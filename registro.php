@@ -37,9 +37,17 @@ session_start();
 
                 <input type="email" name="correo" placeholder="Correo" required>
 
-                <input type="password" name="password" placeholder="Contraseña" required>
+                <input type="date" name="fecha_nacimiento" required>
 
-                <input type="password" name="password_confirm" placeholder="Confirmar contraseña" required>
+                <select name="genero" required>
+                    <option value="">Selecciona tu género</option>
+                    <option value="mujer">Mujer</option>
+                    <option value="hombre">Hombre</option>
+                </select>
+
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">&#128065;</button></div>
+
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" minlength="6" maxlength="72" required><button type="button" class="ver-password" aria-label="Mostrar confirmación">&#128065;</button></div>
 
                 <button type="submit">Crear cuenta</button>
 
@@ -51,6 +59,15 @@ session_start();
     </div>
 
 </div>
+
+<script>
+document.querySelectorAll('.ver-password').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+        const campo = this.parentElement.querySelector('input');
+        campo.type = campo.type === 'password' ? 'text' : 'password';
+    });
+});
+</script>
 
 </body>
 </html>

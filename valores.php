@@ -46,6 +46,8 @@ include("header.php");
 }
 </style>
 
+<link rel="stylesheet" href="styles.css">
+
 <div class="valores-container">
 
     <h2>Nuestros Valores</h2>
