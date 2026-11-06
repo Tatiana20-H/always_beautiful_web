@@ -37,7 +37,7 @@ if (isset($_GET['session_id']) || isset($_GET['cancelled'])) {
                 mysqli_stmt_close($usuarioPedido);
             }
             if ($pedidoPropio) {
-                $facturasEnviadas = stripeEnviarFacturasPedido($conexion, $referenciaStripe);
+                $facturasEnviadas = enviarFacturasPedido($conexion, $referenciaStripe);
                 if (!$facturasEnviadas) {
                     error_log('No se pudieron enviar todos los correos de factura al volver de Stripe.');
                 }
@@ -145,6 +145,10 @@ if (preg_match('/^[A-Za-z0-9-]{1,100}$/D', $transaccionId) && wompiCredencialesS
                 'ERROR' => 'Wompi reportó un error en el pago. El carrito se conserva.',
             ];
             $mensaje = $mensajesEstado[$estado] ?? 'Wompi devolvió un estado no reconocido. El pedido no se marcó como pagado.';
+
+            if ($estado === 'APPROVED' && !enviarFacturasPedido($conexion, (string) ($transaccion['reference'] ?? ''))) {
+                error_log('No se pudieron enviar todos los correos de factura para la compra Wompi.');
+            }
 
             $pendienteSesion = $_SESSION['pago_pendiente'] ?? null;
             if ($estado === 'APPROVED' && !empty($_SESSION['usuario_id']) &&

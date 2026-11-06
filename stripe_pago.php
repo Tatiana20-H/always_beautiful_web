@@ -314,8 +314,8 @@ function stripeAplicarSesionVerificada($conexion, array $sesion) {
     return mysqli_commit($conexion);
 }
 
-function stripeEnviarFacturasPedido($conexion, $referencia) {
-    $buscarPedido = mysqli_prepare($conexion, 'SELECT p.id, p.usuario_id, p.total, p.fecha_pago, p.fecha_pedido, p.datos_entrega, p.observacion_inventario, p.correo_usuario_enviado, p.correo_admin_enviado, u.nombre AS nombre_cuenta, u.correo AS correo_cuenta FROM pedidos p JOIN usuarios u ON u.id = p.usuario_id WHERE p.referencia_pago = ? AND p.estado = \'completado\' LIMIT 1');
+function enviarFacturasPedido($conexion, $referencia) {
+    $buscarPedido = mysqli_prepare($conexion, 'SELECT p.id, p.usuario_id, p.total, p.fecha_pago, p.fecha_pedido, p.datos_entrega, p.observacion_inventario, p.metodo_pago, p.correo_usuario_enviado, p.correo_admin_enviado, u.nombre AS nombre_cuenta, u.correo AS correo_cuenta FROM pedidos p JOIN usuarios u ON u.id = p.usuario_id WHERE p.referencia_pago = ? AND p.estado = \'completado\' LIMIT 1');
     if (!$buscarPedido) {
         return false;
     }
@@ -361,13 +361,17 @@ function stripeEnviarFacturasPedido($conexion, $referencia) {
     $fechaRegistroPago = (string) ($pedido['fecha_pago'] ?: $pedido['fecha_pedido']);
     $fechaCompra = new DateTimeImmutable($fechaRegistroPago, new DateTimeZone('America/Bogota'));
     $fechaCompra = $fechaCompra->setTimezone(new DateTimeZone('America/Bogota'));
+    $metodoPagoRegistrado = trim((string) ($pedido['metodo_pago'] ?? ''));
+    $metodoPago = strtolower($metodoPagoRegistrado) === 'stripe'
+        ? 'Stripe'
+        : 'Wompi' . ($metodoPagoRegistrado !== '' ? ' (' . $metodoPagoRegistrado . ')' : '');
     $cuerpoFactura = "Factura de compra - Always Beautiful\n\n" .
         'Pedido: ' . $pedidoId . "\n" .
         'Referencia: ' . $referencia . "\n\n" .
         "Productos facturados:\n" . implode("\n", $lineasFactura) . "\n\n" .
         'Total pagado: $' . number_format((int) $pedido['total'], 0, ',', '.') . " COP\n" .
         'Fecha y hora del pago: ' . $fechaCompra->format('d/m/Y H:i:s') . " (hora de Colombia)\n" .
-        "Método de pago: Stripe\n\n" .
+        'Método de pago: ' . $metodoPago . "\n\n" .
         "Datos de entrega:\n" . $resumenEntrega . "\n\n" .
         "Gracias por tu compra.\nAlways Beautiful";
 

@@ -3,6 +3,7 @@ include __DIR__ . '/conexion.php';
 $conexion = $GLOBALS['conexion'];
 require_once __DIR__ . '/wompi_config.php';
 require_once __DIR__ . '/wompi_pago.php';
+require_once __DIR__ . '/stripe_pago.php';
 
 function responderEventoWompi($codigo, $mensaje) {
     http_response_code($codigo);
@@ -51,5 +52,9 @@ if (!$datosCoinciden) {
 
 if (!wompiAplicarTransaccionVerificada($conexion, $transaccionActual)) {
     responderEventoWompi(503, 'No fue posible aplicar la confirmación al pedido.');
+}
+if (($transaccionActual['status'] ?? '') === 'APPROVED' && !enviarFacturasPedido($conexion, (string) $transaccionActual['reference'])) {
+    error_log('No se pudieron enviar todos los correos de factura para la compra Wompi.');
+    responderEventoWompi(503, 'El pago se confirmó, pero el correo de la factura se reintentará.');
 }
 responderEventoWompi(200, 'Evento procesado.');

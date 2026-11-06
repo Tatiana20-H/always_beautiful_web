@@ -41,7 +41,7 @@ if (!$sesionActual) {
 if (!stripeAplicarSesionVerificada($conexion, $sesionActual)) {
     responderEventoStripe(400, 'El checkout no coincide con un pedido pagado válido.');
 }
-if (!stripeEnviarFacturasPedido($conexion, (string) $sesionActual['client_reference_id'])) {
+if (!enviarFacturasPedido($conexion, (string) $sesionActual['client_reference_id'])) {
     error_log('No se pudieron enviar todos los correos de factura para la compra Stripe.');
     responderEventoStripe(503, 'El pago se confirmó, pero la notificación por correo se reintentará.');
 }
