@@ -7,6 +7,7 @@ if (strtolower((string) ($_SESSION['rol'] ?? '')) === 'admin') {
 include('conexion.php');
 $conexion = $GLOBALS['conexion'];
 require_once __DIR__ . '/precios_carrito.php';
+require_once __DIR__ . '/stripe_config.php';
 date_default_timezone_set('America/Bogota');
 
 const PEDIDO_MAXIMO_COP = 4294967295;
@@ -84,6 +85,10 @@ if (!isset($_SESSION['usuario_id'])) {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ver_carrito.php');
     exit();
+}
+
+if (!stripeModoPruebaDisponible()) {
+    responderEtapaPedido('El pago está temporalmente deshabilitado. Configura STRIPE_SECRET_KEY con una clave de prueba válida y vuelve a intentarlo.', 503);
 }
 
 $usuarioId = filter_var($_SESSION['usuario_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);

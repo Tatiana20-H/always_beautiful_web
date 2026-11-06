@@ -8,7 +8,9 @@ if (!isset($_SESSION['usuario_id'])) {
 include_once __DIR__ . '/conexion.php';
 $conexion = $GLOBALS['conexion'];
 require_once __DIR__ . '/precios_carrito.php';
+require_once __DIR__ . '/stripe_config.php';
 $puntosDisponibles = puntosDisponiblesUsuario($conexion, (int) $_SESSION['usuario_id']);
+$pagoDisponible = stripeModoPruebaDisponible();
 $solicitudDescuentoActiva = false;
 $consultaDescuentoActivo = mysqli_prepare($conexion, "SELECT id FROM solicitudes_beneficios WHERE usuario_id = ? AND tipo = 'descuento' AND estado IN ('solicitado', 'reservado') LIMIT 1");
 if ($consultaDescuentoActivo) {
@@ -145,10 +147,11 @@ else:
 <section class="pasarela-pago" aria-labelledby="titulo-pago-carrito">
     <div class="pago-encabezado"><div><p class="pago-etiqueta">PAGO SEGURO</p><h2 id="titulo-pago-carrito">Finaliza tu compra</h2></div></div>
     <p>Continúa al checkout seguro para completar el pedido.</p>
+    <?php if (!$pagoDisponible): ?><p class="pago-configuracion" role="status">El pago está temporalmente deshabilitado. Falta configurar una clave de prueba de Stripe en el servidor.</p><?php endif; ?>
     <?php if (empty($_SESSION['csrf_pago'])) $_SESSION['csrf_pago'] = bin2hex(random_bytes(32)); ?>
     <form action="pagar.php" method="POST" id="form-pago">
         <input type="hidden" name="csrf_pago" value="<?= htmlspecialchars($_SESSION['csrf_pago'], ENT_QUOTES, 'UTF-8') ?>">
-        <button type="submit" class="btn-pagar" <?= empty($carritoValido) ? 'disabled' : '' ?>>Continuar al pago</button>
+        <button type="submit" class="btn-pagar" <?= empty($carritoValido) || !$pagoDisponible ? 'disabled' : '' ?>>Continuar al pago</button>
     </form>
 </section>
 <?php endif; ?>
