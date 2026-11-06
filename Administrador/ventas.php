@@ -1,5 +1,5 @@
-<?php include("Seguridad.php"); ?>
-<?php include("../conexion.php"); ?>
+<?php include_once("Seguridad.php"); ?>
+<?php include_once("../conexion.php"); ?>
 <?php $conexion = $GLOBALS['conexion']; ?>
 <?php
 if (empty($_SESSION['csrf_solicitud_beneficio_ventas'])) {
@@ -239,7 +239,7 @@ unset($_SESSION['flash_beneficio_ventas']);
 </style>
 
 <div class="ventas-container">
-    <h2>Registro de Ventas</h2>
+    <h2>Registro de ventas</h2>
 
     <?php
     $estadisticas = mysqli_query($conexion, "SELECT COUNT(*) AS total, SUM(estado IN ('pendiente', 'procesando_pago')) AS pendientes, SUM(estado = 'completado') AS completados, COALESCE(SUM(CASE WHEN estado = 'completado' THEN total ELSE 0 END), 0) AS monto_completado FROM pedidos");
@@ -280,100 +280,35 @@ unset($_SESSION['flash_beneficio_ventas']);
         </a>
     </div>
 
-    <p class="ventas-filtro">
-        <?php if ($filtro === 'pendientes'): ?>Pedidos pendientes de pago, incluidos los que ya tienen datos de entrega guardados.
-        <?php elseif ($filtro === 'completados' || $filtro === 'monto'): ?>Pedidos cuyo pago fue confirmado.
-        <?php else: ?>Todos los pedidos, pendientes y pagados.<?php endif; ?>
-    </p>
-
-    <?php if ($resultadoPedidos && mysqli_num_rows($resultadoPedidos) > 0): ?>
+    <?php
+    $filtroEstado = $_GET['estado'] ?? 'todos';
+    $estadosValidos = ['todos', 'pendiente', 'completado'];
+    if (!in_array($filtroEstado, $estadosValidos, true)) $filtroEstado = 'todos';
+    $filtroSql = $filtroEstado === 'todos' ? '' : " WHERE p.estado = '" . $filtroEstado . "'";
+    $resultado = mysqli_query($conexion, "SELECT p.id, p.usuario_id, p.estado, p.total, p.metodo_pago, p.referencia_pago, p.fecha_pedido, u.nombre, u.correo FROM pedidos p INNER JOIN usuarios u ON u.id = p.usuario_id{$filtroSql} ORDER BY p.id ASC");
+    if (mysqli_num_rows($resultado) > 0):
+    ?>
         <div class="tabla-ventas">
             <table>
                 <thead>
                     <tr>
-                        <th>N.º</th>
-                        <th>Cliente</th>
-                        <th>Puntos</th>
+                        <th>ID</th>
+                        <th>Usuario ID</th>
                         <th>Estado</th>
-                        <th>Productos</th>
-                        <th>Entrega</th>
                         <th>Total</th>
+                        <th>Pago</th>
                         <th>Fecha</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php $clientesObsequioMostrado = []; while ($pedido = mysqli_fetch_assoc($resultadoPedidos)): ?>
                         <tr>
-                            <td><strong><?= (int) $pedido['id'] ?></strong></td>
-                            <td class="cliente-ventas"><strong><?= htmlspecialchars((string) ($pedido['usuario_nombre'] ?: 'Usuario'), ENT_QUOTES, 'UTF-8') ?></strong><small><?= htmlspecialchars((string) ($pedido['usuario_correo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></small></td>
-                            <td>
-                                <span class="badge-puntos"><?= max(0, (int) $pedido['puntos_cliente']) ?> puntos</span>
-                                <?php
-                                $solicitudesObsequio = [];
-                                $idClienteObsequios = (int) $pedido['usuario_id'];
-                                if ($idClienteObsequios > 0 && !isset($clientesObsequioMostrado[$idClienteObsequios])) {
-                                    $clientesObsequioMostrado[$idClienteObsequios] = true;
-                                    $buscarObsequiosCliente = mysqli_prepare($conexion, "SELECT id, puntos FROM solicitudes_beneficios WHERE usuario_id = ? AND tipo = 'obsequio' AND estado = 'solicitado' ORDER BY fecha_solicitud ASC");
-                                } else {
-                                    $buscarObsequiosCliente = false;
-                                }
-                                if ($buscarObsequiosCliente) {
-                                    mysqli_stmt_bind_param($buscarObsequiosCliente, 'i', $idClienteObsequios);
-                                    if (mysqli_stmt_execute($buscarObsequiosCliente)) {
-                                        $resultadoObsequiosCliente = mysqli_stmt_get_result($buscarObsequiosCliente);
-                                        $solicitudesObsequio = $resultadoObsequiosCliente ? mysqli_fetch_all($resultadoObsequiosCliente, MYSQLI_ASSOC) : [];
-                                    }
-                                    mysqli_stmt_close($buscarObsequiosCliente);
-                                }
-                                ?>
-                                <?php foreach ($solicitudesObsequio as $solicitudObsequio): ?>
-                                    <span class="solicitud-obsequio-pendiente">Solicita obsequio · <?= (int) $solicitudObsequio['puntos'] ?> puntos</span>
-                                    <form method="post" class="form-resolver-beneficio">
-                                        <input type="hidden" name="accion_venta" value="resolver_beneficio">
-                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_solicitud_beneficio_ventas'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <input type="hidden" name="solicitud_id" value="<?= (int) $solicitudObsequio['id'] ?>">
-                                        <button type="submit" name="decision_solicitud" value="aprobar">Aprobar</button>
-                                        <button type="submit" name="decision_solicitud" value="rechazar" class="rechazar">Rechazar</button>
-                                    </form>
-                                <?php endforeach; ?>
-                            </td>
-                            <td><span class="badge-estado <?= $pedido['estado'] === 'completado' ? 'completado' : (in_array($pedido['estado'], ['pendiente', 'procesando_pago'], true) ? 'pendiente' : 'otro') ?>"><?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $pedido['estado'])), ENT_QUOTES, 'UTF-8') ?></span>
-                                <?php if (!empty($pedido['observacion_inventario'])): ?><small><?= htmlspecialchars((string) $pedido['observacion_inventario'], ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
-                            </td>
-                            <td>
-                                <div class="pedido-lineas">
-                                    <?php
-                                    $idPedidoActual = (int) $pedido['id'];
-                                    $consultaDetalles = mysqli_prepare($conexion, 'SELECT producto_nombre, cantidad, precio_unitario, subtotal FROM detalles_pedido WHERE pedido_id = ? ORDER BY id');
-                                    $detallesPedido = [];
-                                    if ($consultaDetalles) {
-                                        mysqli_stmt_bind_param($consultaDetalles, 'i', $idPedidoActual);
-                                        if (mysqli_stmt_execute($consultaDetalles)) {
-                                            $resultadoDetalles = mysqli_stmt_get_result($consultaDetalles);
-                                            $detallesPedido = $resultadoDetalles ? mysqli_fetch_all($resultadoDetalles, MYSQLI_ASSOC) : [];
-                                        }
-                                        mysqli_stmt_close($consultaDetalles);
-                                    }
-                                    ?>
-                                    <?php foreach ($detallesPedido as $detalle): ?>
-                                        <div class="pedido-linea">
-                                            <strong><?= htmlspecialchars((string) $detalle['producto_nombre'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                            <small><?= (int) $detalle['cantidad'] ?> × $<?= number_format((int) $detalle['precio_unitario'], 0, ',', '.') ?> = $<?= number_format((int) $detalle['subtotal'], 0, ',', '.') ?> COP</small>
-                                        </div>
-                                    <?php endforeach; ?>
-                                    <?php if ($detallesPedido === []): ?><span>Sin detalle disponible</span><?php endif; ?>
-                                </div>
-                            </td>
-                            <td class="pedido-entrega">
-                                <?php $entrega = json_decode((string) ($pedido['datos_entrega'] ?? ''), true); $entrega = is_array($entrega) ? $entrega : []; ?>
-                                <?php if ($entrega !== []): ?>
-                                    <?= htmlspecialchars((string) ($entrega['direccion'] ?? 'Dirección pendiente'), ENT_QUOTES, 'UTF-8') ?>
-                                    <small><?= htmlspecialchars((string) ($entrega['ciudad'] ?? ''), ENT_QUOTES, 'UTF-8') ?><?= !empty($entrega['departamento']) ? ', ' . htmlspecialchars((string) $entrega['departamento'], ENT_QUOTES, 'UTF-8') : '' ?></small>
-                                    <small><?= htmlspecialchars((string) ($entrega['nombre'] ?? ''), ENT_QUOTES, 'UTF-8') ?><?= !empty($entrega['telefono']) ? ' · ' . htmlspecialchars((string) $entrega['telefono'], ENT_QUOTES, 'UTF-8') : '' ?></small>
-                                <?php else: ?>Pendiente de datos<?php endif; ?>
-                            </td>
-                            <td><strong>$<?= number_format((int) $pedido['total'], 0, ',', '.') ?> COP</strong><?php if ((int) $pedido['descuento'] > 0): ?><small>Descuento: $<?= number_format((int) $pedido['descuento'], 0, ',', '.') ?> · <?= (int) $pedido['puntos_usados'] ?> puntos</small><?php endif; ?></td>
-                            <td><?= htmlspecialchars(date('d/m/Y H:i', strtotime((string) (($pedido['fecha_pago'] ?: $pedido['fecha_pedido'])))), ENT_QUOTES, 'UTF-8') ?></td>
+                            <td><strong>#<?= htmlspecialchars($row['id']) ?></strong></td>
+                            <td><?= htmlspecialchars($row['usuario_id']) ?></td>
+                            <td><span class="badge-accion"><?= htmlspecialchars($row['estado']) ?></span></td>
+                            <td>$<?= number_format((int) $row['total'], 0, ',', '.') ?></td>
+                            <td><?= htmlspecialchars($row['metodo_pago'] ?? 'No indicado') ?></td>
+                            <td><?= date('d/m/Y H:i', strtotime($row['fecha_pedido'])) ?></td>
                         </tr>
                     <?php endwhile; ?>
                 </tbody>
@@ -383,8 +318,8 @@ unset($_SESSION['flash_beneficio_ventas']);
     else:
     ?>
         <div class="sin-ventas">
-            <h3>No hay pedidos en esta vista</h3>
-            <p>Prueba otra categoría de pedidos.</p>
+            <h3>No hay ventas registradas</h3>
+            <p>Por el momento no hay registro de transacciones.</p>
         </div>
     <?php
     endif;

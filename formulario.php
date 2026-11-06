@@ -22,7 +22,7 @@ if (!isset($_SESSION['token_csrf_contacto'])) {
     $_SESSION['token_csrf_contacto'] = bin2hex(random_bytes(32));
 }
 
-if (isset($_SESSION['usuario_id'])) {
+if (!empty($_SESSION['usuario_id']) && ($_SESSION['rol'] ?? '') === 'usuario') {
     $usuario_logueado = true;
     $resultado = mysqli_query($conexion, "SELECT nombre, correo FROM usuarios WHERE id=" . intval($_SESSION['usuario_id']));
     if ($resultado && mysqli_num_rows($resultado) > 0) {
@@ -125,21 +125,23 @@ if ($usuario_logueado) {
                 <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="off" required>
                 <input type="date" name="fecha_nacimiento" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
+                <select name="genero" required>
+                    <option value="">Selecciona tu género</option>
+                    <option value="mujer">Mujer</option>
+                    <option value="hombre">Hombre</option>
+                </select>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña (8-16: letras, número y símbolo)" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">👁️</button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación">👁️</button></div>
                 <button type="submit">Crear cuenta</button>
             </form>
         </div>
 
         <div class="auth-panel" data-auth-panel="login">
             <h2>Inicia sesión para continuar</h2>
-            <form action="login.php" method="POST" autocomplete="on">
-                <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <select name="rol" aria-label="Rol de inicio de sesión" required>
-                    <option value="usuario">Usuario</option>
-                    <option value="admin">Administrador</option>
-                </select>
+            <form action="login.php" method="POST">
+                <input type="email" name="correo" placeholder="Correo" required>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">👁️</button></div>
+                <select name="rol" required><option value="usuario">Usuario</option><option value="admin">Administrador</option></select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>
@@ -231,7 +233,139 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
         </a>
     </section>
 
-    <section class="contacto-formulario-columna" aria-label="Formulario de contacto">
+.formulario-contacto {
+    background: #fbf7f3;
+    border: 1px solid #d7b8ad;
+    padding: 36px;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(58, 39, 34, 0.12);
+}
+
+.formulario-contacto h2 {
+    text-align: center;
+    color: #481b18;
+    margin-bottom: 30px;
+}
+
+.usuario-info {
+    background: #f1e3da;
+    border-left: 4px solid #b87552;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    color: #403834;
+    font-size: 0.9em;
+}
+
+.aviso-registro {
+    background: #f1e3da;
+    color: #403834;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #b87552;
+    text-align: center;
+}
+
+.aviso-registro a {
+    color: #743629;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.aviso-registro a:hover {
+    text-decoration: underline;
+}
+
+.formulario-contacto input,
+.formulario-contacto textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: 1px solid #cdbfb3;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    transition: border-color 0.3s;
+}
+
+.formulario-contacto input:focus,
+.formulario-contacto textarea:focus {
+    outline: none;
+    border-color: #a96d4b;
+    box-shadow: 0 0 0 3px rgba(184, 117, 82, 0.16);
+}
+
+.formulario-contacto input:disabled {
+    background: #f0f0f0;
+    cursor: not-allowed;
+}
+
+.formulario-contacto button {
+    width: 100%;
+    padding: 12px;
+    background: #481b18;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1em;
+    transition: all 0.3s;
+    margin-top: 10px;
+}
+
+.formulario-contacto button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(72, 27, 24, 0.2);
+}
+
+.formulario-contacto button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.contacto-acceso {
+    background: #fbf7f3;
+    border: 1px solid #d7b8ad;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(58, 39, 34, 0.12);
+    margin: 0 auto;
+    max-width: 600px;
+    padding: 36px;
+    text-align: center;
+}
+
+.contacto-acceso h2 {
+    color: #481b18;
+    margin-top: 0;
+}
+
+.contacto-acceso p {
+    color: #5b3c35;
+    line-height: 1.6;
+}
+
+.contacto-acceso button {
+    background: #481b18;
+    border: 0;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 12px 18px;
+}
+
+@media (max-width: 600px) {
+    .formulario-contacto, .contacto-acceso { padding: 24px 18px; }
+}
+</style>
+
+<link rel="stylesheet" href="styles.css">
+
+<div class="formulario-container">
 
     <?php if ($notificacion_contacto): ?>
         <?php
@@ -243,59 +377,31 @@ document.querySelectorAll('.ver-password').forEach(function (boton) {
         </div>
     <?php endif; ?>
 
-    <form action="Procesar_formulario.php" method="POST" enctype="multipart/form-data" class="formulario formulario-contacto" autocomplete="on">
-        <header class="contacto-formulario-header">
-            <p class="contacto-formulario-kicker">Contacto</p>
-            <h2>Envíanos un mensaje</h2>
-            <p>Los campos marcados son obligatorios.</p>
-        </header>
-        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf_contacto'], ENT_QUOTES, 'UTF-8') ?>">
-
-        <?php if ($usuario_logueado): ?>
-            <input type="hidden" name="nombre" value="<?= htmlspecialchars($nombre_usuario, ENT_QUOTES, 'UTF-8') ?>">
-            <input type="hidden" name="correo" value="<?= htmlspecialchars($correo_usuario, ENT_QUOTES, 'UTF-8') ?>">
-            <div class="contacto-identidad">Enviaremos tu mensaje asociado a <strong><?= htmlspecialchars($nombre_usuario, ENT_QUOTES, 'UTF-8') ?></strong> · <?= htmlspecialchars($correo_usuario, ENT_QUOTES, 'UTF-8') ?></div>
-        <?php else: ?>
-            <div class="contacto-campos-identidad">
-                <label class="contacto-campo" for="contacto-nombre">Nombre
-                    <input id="contacto-nombre" type="text" name="nombre" maxlength="100" value="<?= htmlspecialchars($datos_pendientes['nombre'] ?? '', ENT_QUOTES, 'UTF-8') ?>" autocomplete="name" required>
-                </label>
-                <label class="contacto-campo" for="contacto-correo">Correo electrónico
-                    <input id="contacto-correo" type="email" name="correo" maxlength="100" value="<?= htmlspecialchars($datos_pendientes['correo'] ?? '', ENT_QUOTES, 'UTF-8') ?>" autocomplete="email" required>
-                </label>
-            </div>
-        <?php endif; ?>
-
-        <label class="contacto-campo" for="contacto-asunto">Asunto
-            <input id="contacto-asunto" type="text" name="asunto" maxlength="200" value="<?= htmlspecialchars($datos_pendientes['asunto'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="¿Sobre qué trata tu consulta?" required>
-        </label>
-
-        <div class="contacto-campo">
-            <label for="contacto-mensaje">Mensaje</label>
+    <?php if ($usuario_logueado): ?>
+        <div class="usuario-info">
+            Sesión iniciada como <strong><?php echo htmlspecialchars($nombre_usuario); ?></strong>
+        </div>
+        <form action="Procesar_formulario.php" method="POST" enctype="multipart/form-data" class="formulario formulario-contacto">
+            <h2>Contáctanos</h2>
+            <input type="hidden" name="nombre" value="<?php echo htmlspecialchars($nombre_usuario); ?>">
+            <input type="hidden" name="correo" value="<?php echo htmlspecialchars($correo_usuario); ?>">
+            <input type="text" name="asunto" placeholder="Asunto" maxlength="200" required>
             <div class="mensaje-contenedor">
-                <textarea id="contacto-mensaje" name="mensaje" rows="7" placeholder="Escribe aquí los detalles de tu consulta..." required><?= htmlspecialchars($datos_pendientes['mensaje'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-                <label class="foto-mensaje" title="Adjuntar una foto">
-                    <span aria-hidden="true">📷</span>
-                    <span>Adjuntar foto</span>
+                <textarea name="mensaje" placeholder="Escribe tu mensaje..." maxlength="5000" required></textarea>
+                <label class="foto-mensaje" title="Adjuntar una imagen">
+                    <span>Adjuntar imagen</span>
                     <input type="file" name="foto_mensaje" accept="image/jpeg,image/png,image/webp">
                 </label>
-                <div class="foto-mensaje-vista previa-oculta" id="foto-mensaje-vista" aria-live="polite" hidden>
-                    <img id="foto-mensaje-miniatura" alt="Vista previa de la foto adjunta">
-                    <div class="foto-mensaje-detalles">
-                        <span id="foto-mensaje-nombre"></span>
-                        <button type="button" id="foto-mensaje-quitar" aria-label="Quitar foto adjunta">Quitar</button>
-                    </div>
-                </div>
-                <span class="contacto-ayuda-archivo">JPG, PNG o WEBP, máximo 5 MB</span>
             </div>
-        </div>
-
-        <button type="submit">
-            Enviar mensaje <span aria-hidden="true">→</span>
-        </button>
-    </form>
-    </section>
-</main>
+            <button type="submit">Enviar mensaje</button>
+        </form>
+    <?php else: ?>
+        <section class="contacto-acceso">
+            <h2>Inicia sesión para contactarnos</h2>
+            <p>El formulario de contacto está disponible para usuarios que iniciaron sesión.</p>
+            <button type="button" onclick="abrirLoginContacto()">Iniciar sesión</button>
+        </section>
+    <?php endif; ?>
 
 <?php include __DIR__ . '/footer.php'; ?>
 <script>
@@ -306,31 +412,16 @@ const nombreFotoMensaje = document.getElementById('foto-mensaje-nombre');
 const quitarFotoMensaje = document.getElementById('foto-mensaje-quitar');
 let urlVistaFotoMensaje = null;
 
-function limpiarVistaFotoMensaje() {
-    if (urlVistaFotoMensaje) {
-        URL.revokeObjectURL(urlVistaFotoMensaje);
-        urlVistaFotoMensaje = null;
-    }
-    miniaturaFotoMensaje.removeAttribute('src');
-    nombreFotoMensaje.textContent = '';
-    vistaFotoMensaje.hidden = true;
+<script>
+function abrirLoginContacto() {
+    const modal = document.getElementById('autenticacion');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    document.querySelectorAll('[data-auth-tab]').forEach(tab => tab.classList.toggle('activo', tab.dataset.authTab === 'login'));
+    document.querySelectorAll('[data-auth-panel]').forEach(panel => panel.classList.toggle('oculto', panel.dataset.authPanel !== 'login'));
 }
-
-campoFotoMensaje?.addEventListener('change', function () {
-    limpiarVistaFotoMensaje();
-    const archivo = this.files?.[0];
-    if (!archivo || !archivo.type.startsWith('image/')) return;
-
-    urlVistaFotoMensaje = URL.createObjectURL(archivo);
-    miniaturaFotoMensaje.src = urlVistaFotoMensaje;
-    nombreFotoMensaje.textContent = archivo.name;
-    vistaFotoMensaje.hidden = false;
-});
-
-quitarFotoMensaje?.addEventListener('click', function () {
-    campoFotoMensaje.value = '';
-    limpiarVistaFotoMensaje();
-});
 </script>
+
 </body>
 </html>

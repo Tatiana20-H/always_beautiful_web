@@ -10,11 +10,7 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
-    command: >-
-      sh -c "mkdir -p /var/www/html/IMG/mensajes
-      && chown www-data:www-data /var/www/html/IMG/mensajes
-      && chmod 0775 /var/www/html/IMG/mensajes
-      && exec apache2-foreground"
+      - vendor_data:/var/www/html/vendor
     depends_on:
       db:
         condition: service_healthy
@@ -24,18 +20,16 @@ services:
       DB_USER: root
       DB_PASSWORD: ""
       DB_NAME: alwaysbeautifuldb
-      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
-      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
-      MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME:-}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      APP_URL: "${APP_URL:-http://localhost:8080}"
-      WOMPI_PUBLIC_KEY: "${WOMPI_PUBLIC_KEY:-}"
-      WOMPI_PRIVATE_KEY: "${WOMPI_PRIVATE_KEY:-}"
-      WOMPI_INTEGRITY_SECRET: "${WOMPI_INTEGRITY_SECRET:-}"
-      WOMPI_EVENTS_SECRET: "${WOMPI_EVENTS_SECRET:-}"
-      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
-      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-tls}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-tachiandrade79@gmail.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
 
   db:
     image: mariadb:11.4
@@ -60,3 +54,4 @@ services:
 
 volumes:
   db_data:
+  vendor_data:

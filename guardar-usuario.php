@@ -1,130 +1,91 @@
 <?php
 session_start();
-include("conexion.php");
+require_once __DIR__ . '/conexion.php';
 $conexion = $GLOBALS['conexion'];
 
-// Validar que los datos hayan sido enviados
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: registro.php");
+    header('Location: registro.php');
     exit();
 }
 
-// Obtener y limpiar datos
 $nombre = trim($_POST['nombre'] ?? '');
-$correo = trim($_POST['correo'] ?? '');
-$correo = strtolower($correo);
-$password = $_POST['password'] ?? '';
-$password_confirm = $_POST['password_confirm'] ?? '';
-$fecha_nacimiento = $_POST['fecha_nacimiento'] ?? '';
+$correo = strtolower(trim($_POST['correo'] ?? ''));
+$fechaNacimiento = trim($_POST['fecha_nacimiento'] ?? '');
 $genero = $_POST['genero'] ?? '';
-$rol = 'usuario';
-
-// Validaciones
+$password = $_POST['password'] ?? '';
+$passwordConfirm = $_POST['password_confirm'] ?? '';
+$fecha = DateTime::createFromFormat('!Y-m-d', $fechaNacimiento);
 $errores = [];
 
-if (empty($nombre)) {
-    $errores[] = "El nombre es requerido";
+if ($nombre === '' || !preg_match('/^.{1,100}$/us', $nombre)) {
+    $errores[] = 'Escribe un nombre válido (máximo 100 caracteres).';
 }
-
-if (empty($correo) || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-    $errores[] = "Correo inválido";
+if (!filter_var($correo, FILTER_VALIDATE_EMAIL) || strlen($correo) > 254) {
+    $errores[] = 'Escribe un correo válido.';
 }
-
-if (empty($password)) {
-    $errores[] = "La contraseña es requerida";
+if (!$fecha || $fecha->format('Y-m-d') !== $fechaNacimiento || $fecha >= new DateTime('today')) {
+    $errores[] = 'La fecha de nacimiento no es válida.';
 }
-
-if ($password !== $password_confirm) {
-    $errores[] = "Las contraseñas no coinciden";
-}
-
-if (!$fecha_nacimiento || !DateTime::createFromFormat('Y-m-d', $fecha_nacimiento)) {
-    $errores[] = "La fecha de nacimiento es requerida";
-}
-
 if (!in_array($genero, ['hombre', 'mujer'], true)) {
-    $errores[] = "Selecciona una opción de género";
+    $errores[] = 'Selecciona una opción de género.';
+}
+if (!preg_match('/^(?=.*\p{L})(?=.*\d)(?=.*[^\p{L}\d\s]).{8,16}$/u', $password)) {
+    $errores[] = 'La contraseña debe tener entre 8 y 16 caracteres e incluir letras, números y símbolos.';
+}
+if ($password !== $passwordConfirm) {
+    $errores[] = 'Las contraseñas no coinciden.';
 }
 
-if (strlen($password) < 8 || strlen($password) > 16) {
-    $errores[] = "La contraseña debe tener entre 8 y 16 caracteres";
-}
-
-if (!preg_match('/[A-Z]/', $password)
-    || !preg_match('/[a-z]/', $password)
-    || !preg_match('/[0-9]/', $password)
-    || !preg_match('/[^A-Za-z0-9\s]/', $password)) {
-    $errores[] = "La contraseña debe incluir mayúscula, minúscula, número y símbolo";
-}
-
-// Si hay errores, mostrarlos
-if (!empty($errores)) {
+if ($errores) {
     $_SESSION['errores'] = $errores;
     $_SESSION['notificacion'] = ['tipo' => 'amarilla', 'mensaje' => implode(' ', $errores), 'modo' => 'register'];
-    header("Location: index.php");
+    header('Location: index.php');
     exit();
 }
 
-// Verificar si el correo ya existe
-$sql_verificar = "SELECT id, correo_verificado FROM usuarios WHERE correo = ?";
-$stmt = $conexion->prepare($sql_verificar);
-$stmt->bind_param("s", $correo);
+$correoAdmin = strtolower(trim((string) (getenv('ADMIN_EMAIL') ?: 'tachiandrade79@gmail.com')));
+if ($correo === $correoAdmin) {
+    $_SESSION['errores'] = ['Ese correo está reservado para la cuenta administrativa.'];
+    $_SESSION['notificacion'] = ['tipo' => 'roja', 'mensaje' => 'No se pudo crear la cuenta.', 'modo' => 'register'];
+    header('Location: index.php');
+    exit();
+}
+
+$stmt = $conexion->prepare('SELECT id FROM usuarios WHERE correo = ?');
+$stmt->bind_param('s', $correo);
 $stmt->execute();
-$resultado = $stmt->get_result();
-
-if ($resultado->num_rows > 0) {
-    $usuarioExistente = $resultado->fetch_assoc();
-    $stmt->close();
-    if (!(int) $usuarioExistente['correo_verificado']) {
-        $_SESSION['correo_verificacion'] = $correo;
-        $_SESSION['aviso_verificacion'] = 'Esta cuenta aún necesita verificar su correo. Puedes solicitar un código nuevo.';
-        header('Location: confirmacion_registro.php');
-        exit();
-    }
-    $_SESSION['errores'] = ["El correo ya está registrado"];
-    $_SESSION['notificacion'] = ['tipo' => 'roja', 'mensaje' => 'El correo ya está registrado.', 'modo' => 'register'];
-    header("Location: index.php");
+$existe = $stmt->get_result()->fetch_assoc();
+$stmt->close();
+if ($existe) {
+    $_SESSION['errores'] = ['Ese correo ya tiene una cuenta.'];
+    $_SESSION['notificacion'] = ['tipo' => 'roja', 'mensaje' => 'Ese correo ya tiene una cuenta.', 'modo' => 'register'];
+    header('Location: index.php');
     exit();
 }
+
+$codigo = (string) random_int(100000, 999999);
+$codigoHash = password_hash($codigo, PASSWORD_DEFAULT);
+$paso = 'correo';
+$contrasenaHash = password_hash($password, PASSWORD_DEFAULT);
+$stmt = $conexion->prepare("INSERT INTO registros_pendientes (correo, nombre, contrasena, fecha_nacimiento, genero, correo_padre, paso, codigo_hash, codigo_expira, intentos) VALUES (?, ?, ?, ?, ?, NULL, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 0) ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), contrasena = VALUES(contrasena), fecha_nacimiento = VALUES(fecha_nacimiento), genero = VALUES(genero), correo_padre = NULL, paso = VALUES(paso), codigo_hash = VALUES(codigo_hash), codigo_expira = VALUES(codigo_expira), intentos = 0");
+$stmt->bind_param('sssssss', $correo, $nombre, $contrasenaHash, $fechaNacimiento, $genero, $paso, $codigoHash);
+$guardado = $stmt->execute();
+$errorGuardado = $stmt->error;
 $stmt->close();
 
-// Encriptar contraseña
-$password_hash = password_hash($password, PASSWORD_DEFAULT);
-
-// Insertar nuevo usuario
-$sql_insert = "INSERT INTO usuarios (nombre, correo, contrasena, rol, fecha_nacimiento, genero, correo_verificado)
-               VALUES (?, ?, ?, ?, ?, ?, 0)";
-$stmt = $conexion->prepare($sql_insert);
-$stmt->bind_param("ssssss", $nombre, $correo, $password_hash, $rol, $fecha_nacimiento, $genero);
-
-if ($stmt->execute()) {
-    $usuario_id = $conexion->insert_id;
-
-    $_SESSION['correo_verificacion'] = $correo;
-    $codigoVerificacion = (string) random_int(100000, 999999);
-    $stmtCodigo = $conexion->prepare('UPDATE usuarios SET codigo_verificacion = ?, verificacion_expira = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE id = ?');
-    $stmtCodigo->bind_param('si', $codigoVerificacion, $usuario_id);
-    $codigoGuardado = $stmtCodigo->execute();
-    $stmtCodigo->close();
-
-    if ($codigoGuardado && enviarNotificacion($correo, 'Verifica tu correo - Always Beautiful', "Hola $nombre, tu código de verificación es: $codigoVerificacion. Vence en 15 minutos.")) {
-        $_SESSION['aviso_verificacion'] = 'Te enviamos un código de 6 dígitos a tu correo.';
-    } else {
-        $stmtCancelar = $conexion->prepare('DELETE FROM usuarios WHERE id = ? AND correo_verificado = 0');
-        $stmtCancelar->bind_param('i', $usuario_id);
-        $stmtCancelar->execute();
-        $stmtCancelar->close();
-        unset($_SESSION['correo_verificacion']);
-        $_SESSION['aviso_verificacion'] = 'No se pudo enviar el código. Revisa la configuración del correo y solicita otro.';
-    }
-    header('Location: confirmacion_registro.php');
+$_SESSION['registro_correo'] = $correo;
+$_SESSION['registro_paso'] = 'correo';
+if (!$guardado) {
+    error_log('No fue posible guardar registro pendiente: ' . $errorGuardado);
+    $_SESSION['registro_mensaje'] = 'No fue posible guardar el registro. Inténtalo nuevamente.';
+    header('Location: registro.php');
     exit();
+}
+
+if (!enviarNotificacion($correo, 'Verifica tu correo - Always Beautiful', "Tu código de verificación es: {$codigo}\nVence en 10 minutos. Si no solicitaste esta cuenta, ignora este mensaje.")) {
+    $_SESSION['registro_mensaje'] = 'Guardamos tus datos, pero Gmail no pudo enviar el código. Configura una contraseña de aplicación en SMTP_PASSWORD y luego selecciona “Reenviar código”.';
 } else {
-    $_SESSION['errores'] = ["Error al registrar: " . $conexion->error];
-    $_SESSION['notificacion'] = ['tipo' => 'roja', 'mensaje' => 'No fue posible crear la cuenta.', 'modo' => 'register'];
-    header("Location: index.php");
-    exit();
+    $_SESSION['registro_mensaje'] = 'Enviamos un código de seis dígitos a tu correo. Vence en 10 minutos.';
 }
-
-$stmt->close();
-?>
+header('Location: registro.php?verificar=1');
+exit();

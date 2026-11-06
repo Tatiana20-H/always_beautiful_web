@@ -1,3 +1,3 @@
--- No se insertan cuentas de demostración con contraseñas públicas.
--- La cuenta administradora se inicializa desde ADMIN_INITIAL_PASSWORD en el entorno.
+-- No crear cuentas de demostración con contraseñas débiles o en texto plano.
+-- La cuenta administrativa se inicializa desde ADMIN_EMAIL y ADMIN_PASSWORD.
 

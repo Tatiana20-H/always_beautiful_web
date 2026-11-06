@@ -31,14 +31,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enviar_mensaje'])) {
                 // Limpiar formulario
                 $_POST = array();
                 
-                $urlBandejaAdmin = urlAplicacion('/Administrador/mensajes.php?filtro=no_leido');
-                $avisoAdmin = "Hay un nuevo mensaje en Always Beautiful.\n\nNombre: $nombre\nCorreo registrado: $correo\nAsunto: $asunto\n\nMensaje:\n$mensaje\n\nBandeja de administración:\n$urlBandejaAdmin";
-                enviarNotificacion(correoAdministradorNotificaciones(), "Nuevo mensaje de $nombre - Always Beautiful", $avisoAdmin);
-
-                $urlBandejaUsuario = urlAplicacion('/mis_respuestas.php');
-                $urlRegistro = urlAplicacion('/registro.php');
-                $confirmacion = "Hola $nombre,\n\nRecibimos tu mensaje sobre: $asunto. El equipo de Always Beautiful te responderá pronto.\n\nConsulta o responde desde:\n$urlBandejaUsuario\n\nSi aún no tienes cuenta, regístrate usando este mismo correo para vincular la conversación:\n$urlRegistro\n\nSaludos,\nEquipo Always Beautiful";
-                enviarNotificacion($correo, 'Recibimos tu mensaje - Always Beautiful', $confirmacion);
+                // Intentar enviar email (si está configurado)
+                $email_asunto = "Hemos recibido tu mensaje - Always Beautiful";
+                $email_cuerpo = "Hola $nombre,\n\n¡Gracias por contactarnos! Hemos recibido tu mensaje y nos pondremos en contacto pronto.\n\nAsunto: $asunto\n\nSaludos,\nEquipo Always Beautiful";
+                enviarNotificacion($correo, $email_asunto, $email_cuerpo);
             } else {
                 $mensaje_error = "Error al enviar el mensaje. Intenta de nuevo.";
             }
@@ -158,21 +154,23 @@ if ($usuario_logueado) {
                 <input type="text" name="nombre" placeholder="Nombre completo" autocomplete="off" required>
                 <input type="email" name="correo" placeholder="Correo" autocomplete="off" required>
                 <input type="date" name="fecha_nacimiento" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación"></button></div>
+                <select name="genero" required>
+                    <option value="">Selecciona tu género</option>
+                    <option value="mujer">Mujer</option>
+                    <option value="hombre">Hombre</option>
+                </select>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña (8-16: letras, número y símbolo)" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">👁️</button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación">👁️</button></div>
                 <button type="submit">Crear cuenta</button>
             </form>
         </div>
 
         <div class="auth-panel" data-auth-panel="login">
             <h2>Inicia sesión para continuar</h2>
-            <form action="login.php" method="POST" autocomplete="on">
-                <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña"></button></div>
-                <select name="rol" aria-label="Rol de inicio de sesión" required>
-                    <option value="usuario">Usuario</option>
-                    <option value="admin">Administrador</option>
-                </select>
+            <form action="login.php" method="POST">
+                <input type="email" name="correo" placeholder="Correo" required>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">👁️</button></div>
+                <select name="rol" required><option value="usuario">Usuario</option><option value="admin">Administrador</option></select>
                 <p><a href="recuperar.php">¿Has olvidado tu contraseña?</a></p>
                 <button type="submit">Ingresar</button>
             </form>

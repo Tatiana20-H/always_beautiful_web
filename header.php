@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Always Beautiful</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=<?= filemtime(__DIR__ . '/styles.css') ?>">
 </head>
 <body>
 
@@ -63,9 +63,9 @@ if ($esUsuarioAutenticado && isset($GLOBALS['conexion'])) {
             <div class="item dropdown">
                 <button type="button" class="item-trigger" aria-expanded="false"><img src="IMG/productos-logo.png" alt="" class="menu-icon">Productos</button>
                 <div class="submenu">
-                    <a href="maquillaje.php">Maquillaje</a>
+                    <a href="Maquillaje.php">Maquillaje</a>
                     <a href="Accesorios.php">Accesorios</a>
-                    <a href="cabello.php">Cuidado del cabello</a>
+                    <a href="Cabello.php">Cuidado del cabello</a>
                     <a href="piel.php">Cuidado de la piel</a>
                                     <a href="perfumes.php">Perfumes</a>
                 </div>
@@ -76,7 +76,7 @@ if ($esUsuarioAutenticado && isset($GLOBALS['conexion'])) {
                     <a href="quienes.php">Quiénes somos</a>
                     <a href="historia.php">Historia</a>
                     <a href="mision.php">Misión</a>
-                    <a href="vision.php">Visión</a>
+                    <a href="Vision.php">Visión</a>
                     <a href="valores.php">Valores</a>
                 </div>
             </div>
@@ -191,18 +191,18 @@ if(isset($_SESSION['carrito'])){
                     <option value="mujer">Mujer</option>
                     <option value="hombre">Hombre</option>
                 </select>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false">&#128065;</button></div>
-                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" autocomplete="new-password" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación" aria-pressed="false">&#128065;</button></div>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña (8-16: letras, número y símbolo)" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">&#128065;</button></div>
+                <div class="campo-password"><input type="password" name="password_confirm" placeholder="Confirmar contraseña" minlength="8" maxlength="16" required><button type="button" class="ver-password" aria-label="Mostrar confirmación">&#128065;</button></div>
                 <button type="submit">Crear cuenta</button>
             </form>
         </div>
 
         <div class="auth-panel" data-auth-panel="login">
             <h2>Inicia sesión para continuar</h2>
-            <form action="login.php" method="POST" autocomplete="on">
-                <input type="email" name="correo" placeholder="Correo" autocomplete="username" required>
-                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" required><button type="button" class="ver-password" aria-label="Mostrar contraseña" aria-pressed="false">&#128065;</button></div>
-                <select name="rol" aria-label="Rol de inicio de sesión" required>
+            <form action="login.php" method="POST">
+                <input type="email" name="correo" placeholder="Correo" required>
+                <div class="campo-password"><input type="password" name="password" placeholder="Contraseña" required><button type="button" class="ver-password" aria-label="Mostrar contraseña">&#128065;</button></div>
+                <select name="rol" required>
                     <option value="usuario">Usuario</option>
                     <option value="admin">Administrador</option>
                 </select>

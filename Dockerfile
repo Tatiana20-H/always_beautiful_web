@@ -1,14 +1,16 @@
 FROM php:8.2-apache
 
-RUN apt-get update && apt-get install -y --no-install-recommends unzip libcurl4-openssl-dev \
-	&& docker-php-ext-install mysqli pdo_mysql curl \
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip \
+	&& docker-php-ext-install mysqli pdo_mysql \
+	&& php -r "copy('https://getcomposer.org/installer', '/tmp/composer-setup.php');" \
+	&& php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+	&& rm /tmp/composer-setup.php \
 	&& rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-COPY composer.json composer.lock* /tmp/always-beautiful-composer/
-RUN COMPOSER_VENDOR_DIR=/opt/always-beautiful-vendor composer install \
-	--working-dir=/tmp/always-beautiful-composer \
-	--no-dev --no-interaction --prefer-dist --optimize-autoloader
+# Copia todos los archivos de tu proyecto al contenedor
+COPY . /var/www/html/
+
+RUN composer install --no-dev --no-interaction --classmap-authoritative
 

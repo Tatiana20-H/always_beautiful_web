@@ -1,5 +1,5 @@
-<?php include("Seguridad.php"); ?>
-<?php include("../conexion.php"); ?>
+<?php include_once("Seguridad.php"); ?>
+<?php include_once("../conexion.php"); ?>
 <?php $conexion = $GLOBALS['conexion']; ?>
 <?php include("header-admin.php"); ?>
 
@@ -218,57 +218,46 @@
 </style>
 
 <div class="usuarios-container">
-    <h2>Usuarios Registrados</h2>
+    <h2>Usuarios registrados</h2>
 
     <?php
-    $estadisticasUsuarios = mysqli_query($conexion, "SELECT COUNT(*) AS total, SUM(rol <> 'admin' AND activo = 1) AS activos, SUM(rol <> 'admin') AS clientes, SUM(rol = 'admin') AS administradores FROM usuarios");
-    $resumenUsuarios = $estadisticasUsuarios ? mysqli_fetch_assoc($estadisticasUsuarios) : [];
-    $total_usuarios = (int) ($resumenUsuarios['total'] ?? 0);
-    $usuarios_activos = (int) ($resumenUsuarios['activos'] ?? 0);
-    $total_clientes = (int) ($resumenUsuarios['clientes'] ?? 0);
-    $total_admins = (int) ($resumenUsuarios['administradores'] ?? 0);
-    $filtroUsuarios = is_string($_GET['vista'] ?? null) ? $_GET['vista'] : 'todos';
-    if (!in_array($filtroUsuarios, ['todos', 'activos', 'clientes', 'administradores'], true)) {
-        $filtroUsuarios = 'todos';
-    }
-    $condicionesUsuarios = [
-        'todos' => '',
-        'activos' => ' WHERE activo = 1 AND rol <> \'admin\'',
-        'clientes' => ' WHERE rol <> \'admin\'',
-        'administradores' => ' WHERE rol = \'admin\'',
+    $total_usuarios = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM usuarios"))['total'];
+    $total_admins = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM usuarios WHERE rol='admin'"))['total'];
+    $total_clientes = $total_usuarios - $total_admins;
+    $usuarios_activos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM usuarios WHERE activo=TRUE"))['total'];
+    $filtroUsuarios = $_GET['filtro'] ?? 'todos';
+    $condiciones = [
+        'activos' => 'WHERE activo = 1',
+        'clientes' => "WHERE rol = 'usuario'",
+        'administradores' => "WHERE rol = 'admin'",
+        'todos' => ''
     ];
-    $resultadoUsuarios = mysqli_query($conexion, 'SELECT id, nombre, correo, rol, activo, fecha_registro FROM usuarios' . $condicionesUsuarios[$filtroUsuarios] . ' ORDER BY (rol = \'admin\') ASC, id ASC');
+    if (!isset($condiciones[$filtroUsuarios])) $filtroUsuarios = 'todos';
     ?>
 
     <div class="estadisticas">
-        <a class="stat-card <?= $filtroUsuarios === 'todos' ? 'activa' : '' ?>" href="usuarios.php?vista=todos" aria-current="<?= $filtroUsuarios === 'todos' ? 'page' : 'false' ?>">
+        <a class="stat-card" href="?filtro=todos">
             <h3>Total de Usuarios</h3>
             <div class="stat-numero"><?php echo $total_usuarios; ?></div>
         </a>
-        <a class="stat-card <?= $filtroUsuarios === 'activos' ? 'activa' : '' ?>" href="usuarios.php?vista=activos" aria-current="<?= $filtroUsuarios === 'activos' ? 'page' : 'false' ?>">
+        <a class="stat-card" href="?filtro=activos" style="border-left-color: #28a745;">
             <h3>Usuarios Activos</h3>
-            <div class="stat-numero"><?php echo $usuarios_activos; ?></div>
+            <div class="stat-numero" style="color: #28a745;"><?php echo $usuarios_activos; ?></div>
         </a>
-        <a class="stat-card <?= $filtroUsuarios === 'clientes' ? 'activa' : '' ?>" href="usuarios.php?vista=clientes" aria-current="<?= $filtroUsuarios === 'clientes' ? 'page' : 'false' ?>">
+        <a class="stat-card" href="?filtro=clientes" style="border-left-color: #007bff;">
             <h3>Clientes</h3>
-            <div class="stat-numero"><?php echo $total_clientes; ?></div>
+            <div class="stat-numero" style="color: #007bff;"><?php echo $total_clientes; ?></div>
         </a>
-        <a class="stat-card <?= $filtroUsuarios === 'administradores' ? 'activa' : '' ?>" href="usuarios.php?vista=administradores" aria-current="<?= $filtroUsuarios === 'administradores' ? 'page' : 'false' ?>">
+        <a class="stat-card" href="?filtro=administradores" style="border-left-color: #ffc107;">
             <h3>Administradores</h3>
-            <div class="stat-numero"><?php echo $total_admins; ?></div>
+            <div class="stat-numero" style="color: #ffc107;"><?php echo $total_admins; ?></div>
         </a>
     </div>
 
-    <p class="filtro-usuarios"><?php
-        echo match ($filtroUsuarios) {
-            'activos' => 'Mostrando clientes activos.',
-            'clientes' => 'Mostrando todos los clientes, incluidos los inactivos.',
-            'administradores' => 'Mostrando las cuentas administradoras.',
-            default => 'Mostrando clientes y administradores.',
-        };
-    ?></p>
-
-    <?php if ($resultadoUsuarios && mysqli_num_rows($resultadoUsuarios) > 0): ?>
+    <?php
+    $resultado = mysqli_query($conexion, 'SELECT * FROM usuarios ' . $condiciones[$filtroUsuarios] . ' ORDER BY id ASC');
+    if (mysqli_num_rows($resultado) > 0):
+    ?>
         <div class="tabla-usuarios">
             <table>
                 <thead>
@@ -282,23 +271,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php $numeroUsuario = 0; while ($row = mysqli_fetch_assoc($resultadoUsuarios)): $numeroUsuario++; ?>
-                        <tr>
-                            <td><strong><?= $numeroUsuario ?></strong></td>
-                            <td><?= htmlspecialchars((string) $row['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= htmlspecialchars((string) $row['correo'], ENT_QUOTES, 'UTF-8') ?></td>
-                            <td><?= $row['rol'] === 'admin' ? '<span class="badge-rol badge-admin">Administrador</span>' : '<span class="badge-rol badge-usuario">Cliente</span>' ?></td>
-                            <td><?= (int) $row['activo'] === 1 ? '<span class="badge-estado activo">Activo</span>' : '<span class="badge-estado inactivo">Inactivo</span>' ?></td>
-                            <td><?= htmlspecialchars(date('d/m/Y H:i', strtotime((string) $row['fecha_registro'])), ENT_QUOTES, 'UTF-8') ?></td>
-                        </tr>
-                    <?php endwhile; ?>
+                    <?php
+                    while ($row = mysqli_fetch_assoc($resultado)) {
+                        $badge_rol = $row['rol'] === 'admin' ? '<span class="badge-rol badge-admin">Administrador</span>' : '<span class="badge-rol badge-usuario">Cliente</span>';
+                        $estado = $row['activo'] ? '<span style="color: #28a745; font-weight: bold;">Activo</span>' : '<span style="color: #dc3545; font-weight: bold;">Inactivo</span>';
+                        $fecha = date('d/m/Y', strtotime($row['fecha_registro']));
+                        
+                        echo "<tr>
+                            <td><strong>#{$row['id']}</strong></td>
+                            <td>" . htmlspecialchars($row['nombre']) . "</td>
+                            <td>" . htmlspecialchars($row['correo']) . "</td>
+                            <td>$badge_rol</td>
+                            <td>$estado</td>
+                            <td>$fecha</td>
+                        </tr>";
+                    }
+                    ?>
                 </tbody>
             </table>
         </div>
     <?php else: ?>
         <div class="sin-usuarios">
-            <h3>No hay usuarios en esta vista</h3>
-            <p>Prueba otra categoría de cuentas.</p>
+            <h3>No hay usuarios registrados</h3>
+            <p>Por el momento no hay usuarios en el sistema.</p>
         </div>
     <?php endif; ?>
 </div>

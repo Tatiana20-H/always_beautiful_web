@@ -1,147 +1,82 @@
 <?php
 session_start();
-include("conexion.php");
+require_once __DIR__ . '/conexion.php';
 $conexion = $GLOBALS['conexion'];
 
-// Validar que los datos hayan sido enviados
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: index.php");
+    header('Location: index.php');
     exit();
 }
 
-// Obtener y limpiar datos
-$correo = trim($_POST['correo'] ?? '');
+$correo = strtolower(trim($_POST['correo'] ?? ''));
 $password = $_POST['password'] ?? '';
-$rolSolicitado = strtolower(trim((string) ($_POST['rol'] ?? '')));
-
-// Validaciones básicas
+$rolSolicitado = $_POST['rol'] ?? 'usuario';
 $errores = [];
 
-if (empty($correo) || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-    $errores[] = "Correo inválido";
+if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+    $errores[] = 'Escribe un correo válido.';
 }
-
-if (empty($password)) {
-    $errores[] = "La contraseña es requerida";
+if ($password === '') {
+    $errores[] = 'La contraseña es obligatoria.';
 }
 if (!in_array($rolSolicitado, ['usuario', 'admin'], true)) {
-    $errores[] = 'Selecciona un rol válido.';
+    $errores[] = 'Credenciales incorrectas.';
 }
-function redirectWithLoginErrors(array $errors, array $oldData = []) {
-    $_SESSION['errores_login'] = $errors;
+
+function redirectWithLoginErrors(array $errors, array $oldData = []): void {
     $_SESSION['old_login'] = $oldData;
     $_SESSION['notificacion'] = [
-        'tipo' => str_contains(strtolower(implode(' ', $errors)), 'no encontrado') ? 'amarilla' : 'roja',
+        'tipo' => 'roja',
         'mensaje' => implode(' ', $errors),
         'modo' => 'login'
     ];
-    header("Location: index.php");
+    header('Location: index.php');
     exit();
 }
 
-if (!empty($errores)) {
-    redirectWithLoginErrors($errores, [
-        'correo' => $correo,
-        'rol' => $rolSolicitado,
-    ]);
+if ($errores) {
+    redirectWithLoginErrors($errores, ['correo' => $correo]);
 }
 
-// Consultar usuario con prepared statement
-$sql = "SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil, correo_verificado FROM usuarios WHERE LOWER(correo) = LOWER(?) LIMIT 1";
-$stmt = $conexion->prepare($sql);
-
+$stmt = $conexion->prepare('SELECT id, nombre, correo, contrasena, rol, genero, foto_perfil, correo_verificado FROM usuarios WHERE correo = ? AND activo = 1 LIMIT 1');
 if (!$stmt) {
-    redirectWithLoginErrors(["Error en la consulta: " . $conexion->error], [
-        'correo' => $correo,
-    ]);
+    redirectWithLoginErrors(['No fue posible iniciar sesión. Inténtalo más tarde.'], ['correo' => $correo]);
 }
-
-$stmt->bind_param("s", $correo);
+$stmt->bind_param('s', $correo);
 $stmt->execute();
-$resultado = $stmt->get_result();
+$usuario = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
-if ($resultado->num_rows > 0) {
-    $usuario = $resultado->fetch_assoc();
-    $rolUsuario = strtolower(trim((string) ($usuario['rol'] ?? 'usuario')));
-    $hashGuardado = (string) ($usuario['contrasena'] ?? '');
-    $contrasenaValida = password_verify($password, $hashGuardado);
+$correoAdmin = strtolower(trim((string) (getenv('ADMIN_EMAIL') ?: 'tachiandrade79@gmail.com')));
+$rolReal = strtolower(trim((string) ($usuario['rol'] ?? '')));
+$adminPasswordConfigured = (string) getenv('ADMIN_PASSWORD') !== '';
+$rolPermitido = $rolSolicitado === $rolReal && ($rolReal !== 'admin' || ($correo === $correoAdmin && $adminPasswordConfigured));
+$autenticado = $usuario && password_verify($password, (string) $usuario['contrasena']);
 
-    if (!$contrasenaValida && password_get_info($hashGuardado)['algo'] === null && hash_equals($hashGuardado, $password)) {
-        $hashNuevo = password_hash($password, PASSWORD_DEFAULT);
-        $stmtMigracion = $conexion->prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?');
-        if ($stmtMigracion) {
-            $stmtMigracion->bind_param('si', $hashNuevo, $usuario['id']);
-            $contrasenaValida = $stmtMigracion->execute();
-            $stmtMigracion->close();
-        }
-    } elseif ($contrasenaValida && password_needs_rehash($hashGuardado, PASSWORD_DEFAULT)) {
-        $hashNuevo = password_hash($password, PASSWORD_DEFAULT);
-        $stmtMigracion = $conexion->prepare('UPDATE usuarios SET contrasena = ? WHERE id = ?');
-        if ($stmtMigracion) {
-            $stmtMigracion->bind_param('si', $hashNuevo, $usuario['id']);
-            $stmtMigracion->execute();
-            $stmtMigracion->close();
-        }
-    }
+if (!$autenticado || !$rolPermitido) {
+    redirectWithLoginErrors(['Correo, contraseña o tipo de cuenta incorrectos.'], ['correo' => $correo]);
+}
+if (empty($usuario['correo_verificado'])) {
+    redirectWithLoginErrors(['Debes verificar tu correo antes de iniciar sesión.'], ['correo' => $correo]);
+}
+session_regenerate_id(true);
+$_SESSION['usuario_id'] = (int) $usuario['id'];
+$_SESSION['nombre'] = $usuario['nombre'];
+$_SESSION['correo'] = $usuario['correo'];
+$_SESSION['rol'] = $rolReal;
+$_SESSION['genero'] = $usuario['genero'] ?? null;
+$_SESSION['foto_perfil'] = $usuario['foto_perfil'] ?? null;
+cargarDatosUsuario($conexion, (int) $usuario['id']);
+$_SESSION['notificacion'] = ['tipo' => 'verde', 'mensaje' => 'Inicio de sesión exitoso.', 'modo' => 'login'];
+enviarNotificacion($usuario['correo'], 'Inicio de sesión en Always Beautiful', "Hola {$usuario['nombre']}, se inició sesión en tu cuenta de Always Beautiful.");
 
-    if ($contrasenaValida) {
-
-        if (!(int) $usuario['correo_verificado']) {
-            $_SESSION['correo_verificacion'] = $usuario['correo'];
-            $_SESSION['aviso_verificacion'] = 'Verifica tu correo antes de iniciar sesión.';
-            header('Location: confirmacion_registro.php');
-            exit();
-        }
-
-        $esCorreoAdministrador = strcasecmp(trim($usuario['correo']), 'tachiandrade79@gmail.com') === 0;
-        if (($esCorreoAdministrador && $rolUsuario !== 'admin') || (!$esCorreoAdministrador && $rolUsuario === 'admin') || $rolSolicitado !== $rolUsuario) {
-            redirectWithLoginErrors(['No se pudo validar el tipo de cuenta.'], ['correo' => $correo]);
-        }
-        
-        // Login exitoso - guardar sesión
-        session_regenerate_id(true);
-        $_SESSION['usuario_id'] = $usuario['id'];
-        $_SESSION['nombre'] = $usuario['nombre'];
-        $_SESSION['correo'] = $usuario['correo'];
-        $rol = $rolUsuario;
-        $_SESSION['rol'] = $rol;
-        $_SESSION['genero'] = $usuario['genero'] ?? null;
-        $_SESSION['foto_perfil'] = $usuario['foto_perfil'] ?? null;
-        cargarDatosUsuario($conexion, $usuario['id']);
-        $_SESSION['notificacion'] = ['tipo' => 'verde', 'mensaje' => 'Usuario autenticado correctamente.', 'modo' => 'login'];
-            enviarNotificacion($usuario['correo'], 'Inicio de sesión en Always Beautiful', "Hola {$usuario['nombre']}, se inició sesión en tu cuenta de Always Beautiful.");
-        
-        // Registrar en historial de actividades (opcional - no bloquea si falla)
-        $ip_address = $_SERVER['REMOTE_ADDR'];
-        $sql_historial = "INSERT INTO historial_actividades (usuario_id, accion, descripcion, ip_address) 
-                          VALUES (?, 'LOGIN', 'Usuario inició sesión', ?)";
-        $stmt_historial = $conexion->prepare($sql_historial);
-        if ($stmt_historial) {
-            $stmt_historial->bind_param("is", $usuario['id'], $ip_address);
-            $stmt_historial->execute();
-            $stmt_historial->close();
-        }
-        
-        // Redirigir según rol
-        if ($rol === 'admin') {
-            header("Location: Administrador/index.php");
-        } else {
-            header("Location: inicio.php");
-        }
-        exit();
-        
-    } else {
-        redirectWithLoginErrors(["Contraseña incorrecta"], [
-            'correo' => $correo,
-        ]);
-    }
-    
-} else {
-    redirectWithLoginErrors(["Usuario no encontrado con esas credenciales"], [
-        'correo' => $correo,
-    ]);
+$ip = $_SERVER['REMOTE_ADDR'] ?? '';
+$historial = $conexion->prepare("INSERT INTO historial_actividades (usuario_id, accion, descripcion, ip_address) VALUES (?, 'LOGIN', 'Usuario inició sesión', ?)");
+if ($historial) {
+    $historial->bind_param('is', $usuario['id'], $ip);
+    $historial->execute();
+    $historial->close();
 }
 
-$stmt->close();
-$conexion->close();
-?>
+header($rolReal === 'admin' ? 'Location: Administrador/index.php' : 'Location: inicio.php');
+exit();

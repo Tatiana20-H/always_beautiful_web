@@ -3,11 +3,9 @@ session_start();
 include("conexion.php");
 $conexion = $GLOBALS['conexion'];
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['usuario_id'])) {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        header('Location: formulario.php');
-        exit();
-    }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['usuario_id']) || ($_SESSION['rol'] ?? '') !== 'usuario') {
+    header('Location: formulario.php');
+    exit();
 }
 
 $errorFormulario = static function (string $mensaje) {
@@ -34,32 +32,40 @@ $asunto = trim($_POST['asunto'] ?? '');
 $mensaje = trim($_POST['mensaje'] ?? '');
 $fotoMensaje = null;
 
-if ($nombre === '' || strlen($nombre) > 100 || !filter_var($correo, FILTER_VALIDATE_EMAIL) || strlen($correo) > 100) {
-    $errorFormulario('Escribe un nombre y un correo electrónico válidos.');
-}
-if ($asunto === '' || strlen($asunto) > 200 || $mensaje === '') {
-    $errorFormulario('Escribe un asunto de máximo 200 caracteres y un mensaje.');
+if ($asunto === '' || strlen($asunto) > 200 || $mensaje === '' || strlen($mensaje) > 5000) {
+    $_SESSION['notificacion_contacto'] = 'Escribe un asunto y un mensaje antes de enviar.';
+    header('Location: formulario.php');
+    exit();
 }
 
 if (isset($_FILES['foto_mensaje']) && $_FILES['foto_mensaje']['error'] !== UPLOAD_ERR_NO_FILE) {
     $archivo = $_FILES['foto_mensaje'];
     $tiposPermitidos = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-    $tipo = !empty($archivo['tmp_name']) && is_uploaded_file($archivo['tmp_name']) ? mime_content_type($archivo['tmp_name']) : '';
+    $tipo = ($archivo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK
+        && is_uploaded_file($archivo['tmp_name'] ?? '')
+        ? mime_content_type($archivo['tmp_name'])
+        : '';
 
-    if ($archivo['error'] !== UPLOAD_ERR_OK || !isset($tiposPermitidos[$tipo]) || $archivo['size'] > 5 * 1024 * 1024) {
-        $errorFormulario('La foto debe ser JPG, PNG o WEBP y pesar menos de 5 MB.');
+    if (($archivo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !isset($tiposPermitidos[$tipo]) || ($archivo['size'] ?? 0) > 5 * 1024 * 1024) {
+        $_SESSION['notificacion_contacto'] = 'La foto debe ser JPG, PNG o WEBP y pesar menos de 5 MB.';
+        header('Location: formulario.php');
+        exit();
     }
 
     $nombreArchivo = bin2hex(random_bytes(12)) . '.' . $tiposPermitidos[$tipo];
     $fotoMensaje = 'IMG/mensajes/' . $nombreArchivo;
     $rutaCompleta = __DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $fotoMensaje);
-    $directorioFotos = dirname($rutaCompleta);
-    if (!is_dir($directorioFotos) && !@mkdir($directorioFotos, 0755, true) && !is_dir($directorioFotos)) {
-        $errorFormulario('No fue posible preparar el almacenamiento de la foto.');
-    }
+    $directorioMensajes = dirname($rutaCompleta);
 
-    if (!@move_uploaded_file($archivo['tmp_name'], $rutaCompleta)) {
-        $errorFormulario('No fue posible guardar la foto adjunta.');
+    if (!is_dir($directorioMensajes) && !mkdir($directorioMensajes, 0755, true) && !is_dir($directorioMensajes)) {
+        $_SESSION['notificacion_contacto'] = 'No fue posible preparar el almacenamiento de adjuntos.';
+        header('Location: formulario.php');
+        exit();
+    }
+    if (!move_uploaded_file($archivo['tmp_name'], $rutaCompleta)) {
+        $_SESSION['notificacion_contacto'] = 'No fue posible guardar la foto adjunta.';
+        header('Location: formulario.php');
+        exit();
     }
 }
 
@@ -75,28 +81,39 @@ if ($stmt) {
 }
 
 if (!$enviado) {
-    if ($fotoMensaje && isset($rutaCompleta) && is_file($rutaCompleta)) {
-        unlink($rutaCompleta);
+    if ($fotoMensaje !== null) {
+        @unlink(__DIR__ . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $fotoMensaje));
     }
-    $errorFormulario('No fue posible enviar el mensaje. Inténtalo nuevamente.');
+    $_SESSION['notificacion_contacto'] = 'No fue posible enviar el mensaje. Inténtalo nuevamente.';
+    header('Location: formulario.php');
+    exit();
 }
 
-$correoAdministrador = correoAdministradorNotificaciones();
-$urlBandejaAdministrador = urlAplicacion('/Administrador/mensajes.php?filtro=no_leido');
-$cuerpoAvisoAdministrador = "Hay un nuevo mensaje en Always Beautiful.\n\n";
-$cuerpoAvisoAdministrador .= "Nombre: $nombre\nCorreo registrado: $correo\nAsunto: $asunto\n\nMensaje:\n$mensaje\n\n";
-$cuerpoAvisoAdministrador .= "Abre la bandeja de administración para responder:\n$urlBandejaAdministrador";
-enviarNotificacion($correoAdministrador, "Nuevo mensaje de $nombre - Always Beautiful", $cuerpoAvisoAdministrador);
+$administradorCorreo = trim((string) (getenv('ADMIN_EMAIL') ?: 'tachiandrade79@gmail.com'));
+if (filter_var($administradorCorreo, FILTER_VALIDATE_EMAIL)) {
+    $aviso = "Recibiste un mensaje nuevo en el panel administrativo.\n\n" .
+        "De: {$nombre} <{$correo}>\n" .
+        "Asunto: {$asunto}\n\n" .
+        "Mensaje:\n{$mensaje}\n" .
+        ($fotoMensaje ? "\nImagen adjunta: {$fotoMensaje}\n" : '') .
+        "\nEntra al panel de Always Beautiful para responder.";
+    enviarNotificacion($administradorCorreo, 'Nuevo mensaje de contacto - Always Beautiful', $aviso);
+}
 
-$urlBandejaUsuario = urlAplicacion('/mis_respuestas.php');
-$urlRegistro = urlAplicacion('/registro.php');
-$cuerpoConfirmacionUsuario = "Hola $nombre,\n\nRecibimos tu mensaje sobre: $asunto. El equipo de Always Beautiful te responderá pronto.\n\n";
-$cuerpoConfirmacionUsuario .= "Puedes consultar y responder desde tu bandeja:\n$urlBandejaUsuario\n\n";
-$cuerpoConfirmacionUsuario .= "Si aún no tienes cuenta, regístrate usando este mismo correo para vincular la conversación:\n$urlRegistro\n\n";
-$cuerpoConfirmacionUsuario .= "Saludos,\nEquipo Always Beautiful";
-enviarNotificacion($correo, 'Recibimos tu mensaje - Always Beautiful', $cuerpoConfirmacionUsuario);
-
-unset($_SESSION['datos_contacto_pendientes']);
-$_SESSION['notificacion_contacto'] = ['tipo' => 'exito', 'mensaje' => 'Tu mensaje fue enviado. El equipo de Always Beautiful ya puede verlo en la bandeja de administración.'];
-header('Location: formulario.php');
-exit();
+enviarNotificacion($correo, 'Recibimos tu mensaje - Always Beautiful', "Hola {$nombre},\n\nRecibimos tu mensaje con asunto: {$asunto}. El equipo te responderá pronto.");
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="2;url=inicio.php">
+    <title>Mensaje enviado</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="mensaje-enviado">
+        <h2>Mensaje enviado</h2>
+        <p>Gracias por escribirnos. Te responderemos pronto.</p>
+    </div>
+</body>
+</html>

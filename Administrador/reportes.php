@@ -1,5 +1,5 @@
-<?php include("Seguridad.php"); ?>
-<?php include("../conexion.php"); ?>
+<?php include_once("Seguridad.php"); ?>
+<?php include_once("../conexion.php"); ?>
 <?php $conexion = $GLOBALS['conexion']; ?>
 <?php include("header-admin.php"); ?>
 
@@ -129,10 +129,7 @@
 </style>
 
 <div class="reportes-container">
-    <header class="reportes-cabecera">
-        <div><p class="reportes-ceja">PANEL DE CONTROL · ALWAYS BEAUTIFUL</p><h1>Reportes administrativos</h1></div>
-        <span class="reportes-fecha">Actualizado <?= htmlspecialchars(date('d/m/Y · H:i'), ENT_QUOTES, 'UTF-8') ?></span>
-    </header>
+    <h2>Reportes administrativos</h2>
 
     <?php
     $usuarios = mysqli_num_rows(mysqli_query($conexion, "SELECT * FROM usuarios"));
@@ -150,63 +147,39 @@
 
     <div class="reportes-grid">
         <div class="reporte-card reporte-card-usuarios">
+            <div class="reporte-icono" aria-hidden="true">U</div>
             <div class="reporte-titulo">Usuarios Totales</div>
             <div class="reporte-numero"><?php echo $usuarios; ?></div>
             <div class="reporte-meta"><?= $usuarios_activos ?> activos</div>
         </div>
 
         <div class="reporte-card reporte-card-productos">
+            <div class="reporte-icono" aria-hidden="true">P</div>
             <div class="reporte-titulo">Productos</div>
             <div class="reporte-numero"><?php echo $productos; ?></div>
             <div class="reporte-meta"><?= $productos_activos ?> activos en catálogo</div>
         </div>
 
         <div class="reporte-card reporte-card-mensajes">
+            <div class="reporte-icono" aria-hidden="true">M</div>
             <div class="reporte-titulo">Mensajes de Contacto</div>
             <div class="reporte-numero"><?php echo $mensajes; ?></div>
             <div class="reporte-meta"><?= $mensajes_pendientes ?> sin leer</div>
         </div>
 
         <div class="reporte-card reporte-card-actividades">
+            <div class="reporte-icono" aria-hidden="true">V</div>
             <div class="reporte-titulo">Pedidos Realizados</div>
             <div class="reporte-numero"><?php echo $pedidos; ?></div>
             <div class="reporte-meta"><?= $pedidos_completados ?> pagados · <?= $pedidos_pendientes ?> pendientes</div>
         </div>
     </div>
 
-    <section class="resumen-general" aria-labelledby="titulo-resumen">
-        <div class="resumen-cabecera"><h3 id="titulo-resumen">Estado del sistema</h3><small>Conteos actuales</small></div>
-        <div class="resumen-metricas">
-            <article class="resumen-metrica">
-                <h4 class="metrica-titulo">Usuarios</h4>
-                <p class="metrica-principal"><?= $usuarios_activos ?></p>
-                <div class="metrica-detalle"><span class="metrica-punto"></span><strong>activos</strong><span>de <?= $usuarios ?> registrados</span></div>
-            </article>
-            <article class="resumen-metrica">
-                <h4 class="metrica-titulo">Catálogo</h4>
-                <p class="metrica-principal"><?= $productos_activos ?></p>
-                <div class="metrica-detalle"><span class="metrica-punto"></span><strong>productos activos</strong><span>de <?= $productos ?></span></div>
-            </article>
-            <article class="resumen-metrica">
-                <h4 class="metrica-titulo">Pedidos</h4>
-                <p class="metrica-principal"><?= $pedidos_completados ?></p>
-                <div class="metrica-detalle"><span class="metrica-punto"></span><strong>pagados</strong><span><?= $pedidos_pendientes ?> pendientes · <?= $pedidos ?> total</span></div>
-            </article>
-            <article class="resumen-metrica">
-                <h4 class="metrica-titulo">Mensajes</h4>
-                <p class="metrica-principal"><?= $mensajes_pendientes ?></p>
-                <div class="metrica-detalle"><span class="metrica-punto"></span><strong>sin leer</strong><span>de <?= $mensajes ?> recibidos</span></div>
-            </article>
-            <article class="resumen-metrica resumen-metrica-ingresos">
-                <h4 class="metrica-titulo">Ingresos confirmados</h4>
-                <p class="metrica-principal">$<?= number_format($monto_confirmado, 0, ',', '.') ?> <small>COP</small></p>
-                <div class="metrica-detalle"><strong>Solo pedidos con pago completado</strong></div>
-            </article>
-            <article class="resumen-metrica resumen-metrica-actividad">
-                <h4 class="metrica-titulo">Actividad registrada</h4>
-                <p class="metrica-principal"><?= $actividades ?></p>
-                <div class="metrica-detalle"><strong>eventos del sistema</strong></div>
-            </article>
+    <div class="resumen-general">
+        <h3>Resumen general del sistema</h3>
+        <div class="info-item">
+            <span class="info-label">Total de Usuarios Registrados:</span>
+            <span class="info-valor"><?php echo $usuarios; ?></span>
         </div>
     </section>
 </div>

@@ -1,18 +1,27 @@
 <?php 
-include("Seguridad.php");
-include("../conexion.php");
+include_once("Seguridad.php");
+include_once("../conexion.php");
 $conexion = $GLOBALS['conexion'];
-include("header-admin.php");
+
+if (empty($_SESSION['csrf_mensajes'])) {
+    $_SESSION['csrf_mensajes'] = bin2hex(random_bytes(32));
+}
+$csrfMensajes = $_SESSION['csrf_mensajes'];
 
 // Cambiar estado de mensaje a leído
 if (isset($_POST['marcar_leido']) && !empty($_POST['mensaje_id'])) {
     $mensaje_id = intval($_POST['mensaje_id']);
-    mysqli_query($conexion, "UPDATE mensajes_contacto SET estado='leido' WHERE id=$mensaje_id");
+    if (hash_equals($csrfMensajes, (string) ($_POST['csrf'] ?? ''))) {
+        $stmtLeido = $conexion->prepare("UPDATE mensajes_contacto SET estado='leido' WHERE id = ? AND estado = 'no_leido'");
+        $stmtLeido->bind_param('i', $mensaje_id);
+        $stmtLeido->execute();
+        $stmtLeido->close();
+    }
 }
 
 // Obtener parámetros de filtro
 $filtro = $_GET['filtro'] ?? 'todos';
-$pagina = isset($_GET['pagina']) ? intval($_GET['pagina']) : 1;
+$pagina = max(1, isset($_GET['pagina']) ? intval($_GET['pagina']) : 1);
 $por_pagina = 10;
 $offset = ($pagina - 1) * $por_pagina;
 
@@ -22,6 +31,8 @@ if ($filtro === 'no_leido') {
     $where = "WHERE estado='no_leido'";
 } elseif ($filtro === 'respondido') {
     $where = "WHERE estado='respondido'";
+} else {
+    $filtro = 'todos';
 }
 
 // Obtener total de mensajes
@@ -30,11 +41,15 @@ $total = mysqli_fetch_assoc($resultado_total)['total'];
 $paginas = ceil($total / $por_pagina);
 
 // Obtener mensajes
-$sql = "SELECT * FROM mensajes_contacto $where ORDER BY fecha_creacion DESC LIMIT $offset, $por_pagina";
+$sql = "SELECT * FROM mensajes_contacto $where ORDER BY id ASC LIMIT $offset, $por_pagina";
 $resultado = mysqli_query($conexion, $sql);
 
 $no_leidos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM mensajes_contacto WHERE estado='no_leido'"))['total'];
+$tipoAvisoMensajes = isset($_SESSION['error']) ? 'error' : 'success';
+$avisoMensajes = $_SESSION['exito'] ?? $_SESSION['error'] ?? '';
+unset($_SESSION['exito'], $_SESSION['error']);
 ?>
+<?php include("header-admin.php"); ?>
 
 <style>
 .mensajes-container {
@@ -405,8 +420,9 @@ $no_leidos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as tota
 </style>
 
 <div class="mensajes-container">
+    <?php if ($avisoMensajes !== ''): ?><div class="catalogo-alerta <?= $tipoAvisoMensajes ?>" role="status"><?= htmlspecialchars($avisoMensajes) ?></div><?php endif; ?>
     <div class="mensajes-header">
-        <h2>Mensajes de Contacto <?php if ($no_leidos > 0): ?><span class="badge-no-leidos"><?php echo $no_leidos; ?> sin leer</span><?php endif; ?></h2>
+        <h2>Mensajes de contacto <?php if ($no_leidos > 0): ?><span class="badge-no-leidos"><?php echo $no_leidos; ?> sin leer</span><?php endif; ?></h2>
     </div>
 
     <div class="filtros">
@@ -414,6 +430,8 @@ $no_leidos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as tota
         <a href="?filtro=no_leido" class="filtro-btn <?php echo $filtro === 'no_leido' ? 'active' : ''; ?>">Sin leer (<?php echo $no_leidos; ?>)</a>
         <a href="?filtro=respondido" class="filtro-btn <?php echo $filtro === 'respondido' ? 'active' : ''; ?>">Respondidos</a>
     </div>
+
+    <form id="csrfMensajesForm" hidden><input type="hidden" name="csrf" value="<?= htmlspecialchars($csrfMensajes) ?>"></form>
 
     <?php if ($total > 0): ?>
         <div class="mensajes-tabla">
@@ -499,6 +517,7 @@ $no_leidos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as tota
         </div>
         <form id="formRespuesta" method="POST" action="procesar_respuesta.php">
             <div class="modal-body">
+                <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrfMensajes) ?>">
                 <input type="hidden" name="mensaje_id" id="mensajeIdRespuesta">
                 <div class="respuesta-destinatario">
                     <span>Destinatario</span>
@@ -539,27 +558,26 @@ async function abrirDetalle(mensajeId) {
         if (data.success) {
             const nombreSeguro = escaparHtmlMensaje(data.nombre);
             let html = `
-                <div class="detalle-metadatos">
-                    <div class="detalle-campo">
-                        <label>Nombre</label>
-                        <p>${nombreSeguro}</p>
-                    </div>
-                    <div class="detalle-campo">
-                        <label>Correo</label>
-                        <p>${escaparHtmlMensaje(data.correo)}</p>
-                    </div>
-                    <div class="detalle-campo">
-                        <label>Asunto</label>
-                        <p>${escaparHtmlMensaje(data.asunto)}</p>
-                    </div>
-                    <div class="detalle-campo">
-                        <label>Fecha de envío</label>
-                        <p>${escaparHtmlMensaje(data.fecha)}</p>
-                    </div>
+                <div class="detalle-campo">
+                    <label>Nombre:</label>
+                    <p>${escapeHtml(data.nombre)}</p>
                 </div>
-                <div class="detalle-campo detalle-mensaje">
-                    <label>Mensaje del cliente</label>
-                    <p>${escaparHtmlMensaje(data.mensaje)}</p>
+                <div class="detalle-campo">
+                    <label>Correo:</label>
+                    <p>${escapeHtml(data.correo)}</p>
+                </div>
+                <div class="detalle-campo">
+                    <label>Asunto:</label>
+                    <p>${escapeHtml(data.asunto)}</p>
+                </div>
+                <div class="detalle-campo">
+                    <label>Mensaje:</label>
+                    <p>${escapeHtml(data.mensaje)}</p>
+                </div>
+                ${data.foto_mensaje ? `<div class="detalle-campo"><label>Foto adjunta:</label><img class="foto-adjunta-detalle" src="../${escapeHtml(data.foto_mensaje)}" alt="Imagen adjunta al mensaje"></div>` : ''}
+                <div class="detalle-campo">
+                    <label>Fecha:</label>
+                    <p>${data.fecha}</p>
                 </div>
                 ${data.foto_mensaje ? `<div class="detalle-campo"><label>Imagen adjunta</label><figure class="detalle-foto"><img src="../${escaparHtmlMensaje(data.foto_mensaje)}" alt="Imagen adjunta por ${nombreSeguro}"></figure></div>` : ''}
             `;
@@ -568,9 +586,9 @@ async function abrirDetalle(mensajeId) {
                 html += '<section class="detalle-respuestas"><h4>Conversación</h4>';
                 data.respuestas.forEach(respuesta => {
                     html += `
-                        <div class="detalle-respuesta">
-                            <strong>Respuesta · ${escaparHtmlMensaje(respuesta.fecha)}</strong>
-                            <p>${escaparHtmlMensaje(respuesta.texto)}</p>
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                            <strong>Administrador - ${escapeHtml(respuesta.fecha)}</strong>
+                            <p>${escapeHtml(respuesta.texto)}</p>
                         </div>
                     `;
                 });
@@ -584,6 +602,7 @@ async function abrirDetalle(mensajeId) {
             const formData = new FormData();
             formData.append('marcar_leido', '1');
             formData.append('mensaje_id', mensajeId);
+            formData.append('csrf', document.querySelector('#csrfMensajesForm [name="csrf"]').value);
             fetch('', { method: 'POST', body: formData });
         }
     } catch (error) {
@@ -591,7 +610,13 @@ async function abrirDetalle(mensajeId) {
     }
 }
 
-async function abrirRespuesta(mensajeId) {
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+}
+
+function abrirRespuesta(mensajeId) {
     document.getElementById('mensajeIdRespuesta').value = mensajeId;
     document.getElementById('respuesta-nombre').textContent = 'Cargando datos...';
     document.getElementById('respuesta-correo').textContent = '';
@@ -619,7 +644,18 @@ document.getElementById('texto-respuesta').addEventListener('input', function ()
 
 function eliminarMensaje(mensajeId) {
     if (confirm('¿Estás seguro de que deseas eliminar este mensaje?')) {
-        window.location.href = 'eliminar_mensaje.php?id=' + mensajeId;
+        const formulario = document.createElement('form');
+        formulario.method = 'POST';
+        formulario.action = 'eliminar_mensaje.php';
+        [['id', mensajeId], ['csrf', document.querySelector('#csrfMensajesForm [name="csrf"]').value]].forEach(([nombre, valor]) => {
+            const campo = document.createElement('input');
+            campo.type = 'hidden';
+            campo.name = nombre;
+            campo.value = valor;
+            formulario.appendChild(campo);
+        });
+        document.body.appendChild(formulario);
+        formulario.submit();
     }
 }
 

@@ -596,6 +596,69 @@ body {
     filter: saturate(1.05) contrast(1.08);
 }
 
+.slider-texto {
+    align-items: center;
+    background: linear-gradient(135deg, #f1e3da 0%, #fbf7f3 52%, #ead6d2 100%);
+    border: 1px solid #d7b8ad;
+    border-radius: 30px;
+    box-shadow: 0 20px 38px rgba(58, 39, 34, .16), inset 0 0 0 7px rgba(255, 255, 255, .62);
+    box-sizing: border-box;
+    display: flex;
+    height: auto;
+    justify-content: center;
+    margin: 0 auto;
+    min-height: 260px;
+    padding: 1cm;
+    position: relative;
+    text-align: center;
+    width: min(82%, 1200px);
+}
+
+.slider-texto + .mejores-descuentos {
+    margin-top: 40px;
+}
+
+.slider-texto-contenido {
+    flex: 1 1 auto;
+    margin: 0 auto;
+    max-width: none;
+    width: 100%;
+}
+
+.slider-texto h2 {
+    color: var(--ab-wine);
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 2.3vw, 32px);
+    margin: 0 0 22px;
+}
+
+.slider-texto h2::first-letter {
+    text-transform: uppercase;
+}
+
+.slider-texto p {
+    color: var(--ab-carbon);
+    font-size: 17px;
+    line-height: 1.8;
+    margin: 0 auto;
+    max-width: 760px;
+}
+
+.slider-texto .slider-texto-descripcion {
+    max-width: none;
+    text-align: justify;
+}
+
+.slider-texto .slider-texto-cierre {
+    color: var(--ab-terracotta-deep);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-top: 8px;
+    text-transform: uppercase;
+}
+
 @media (max-width: 700px) {
     .slider {
         height: 360px;
@@ -608,6 +671,28 @@ body {
 
     .slider-pista {
         gap: 10px;
+    }
+
+    .slider-texto {
+        height: auto;
+        min-height: 260px;
+        padding: 1cm;
+        width: 92%;
+    }
+
+    .slider-texto h2 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+
+    .slider-texto p {
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    .slider-texto .slider-texto-cierre {
+        font-size: 14px;
+        margin-top: 6px;
     }
 }
 
@@ -815,9 +900,11 @@ textarea {
     background: linear-gradient(135deg, rgba(255, 250, 245, .9), rgba(232, 210, 198, .78));
     border-top: 1px solid rgba(184, 117, 82, .45);
     border-bottom: 1px solid rgba(184, 117, 82, .45);
+    box-sizing: border-box;
     margin: 70px auto 50px;
-    max-width: 1180px;
+    max-width: 1200px;
     padding: 42px 24px 48px;
+    width: min(82%, 1200px);
 }
 
 .encabezado-descuentos {
@@ -1233,7 +1320,9 @@ textarea {
 @media (max-width: 700px) {
     .mejores-descuentos {
         margin-top: 50px;
+        max-width: none;
         padding: 0 16px;
+        width: 92%;
     }
 
     .encabezado-descuentos h2 {

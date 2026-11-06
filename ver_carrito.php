@@ -1,9 +1,6 @@
 <?php
 session_start();
-if (strtolower((string) ($_SESSION['rol'] ?? '')) === 'admin') {
-    header('Location: Administrador/index.php');
-    exit();
-}
+require_once __DIR__ . '/conexion.php';
 if (!isset($_SESSION['usuario_id'])) {
     header('Location: inicio.php');
     exit();
@@ -24,7 +21,18 @@ if ($consultaDescuentoActivo) {
     mysqli_stmt_close($consultaDescuentoActivo);
 }
 $total = 0;
-$carritoValido = true;
+$usuarioId = (int) $_SESSION['usuario_id'];
+$stmtPuntos = $conexion->prepare('SELECT puntos, puntos_resto FROM usuarios WHERE id = ?');
+$stmtPuntos->bind_param('i', $usuarioId);
+$stmtPuntos->execute();
+$saldoPuntos = $stmtPuntos->get_result()->fetch_assoc() ?: ['puntos' => 0, 'puntos_resto' => 0];
+$stmtPuntos->close();
+$puntosDisponibles = $conexion->query('SELECT id, nombre, precio FROM productos WHERE activo = 1 AND stock > 0 ORDER BY nombre ASC');
+if (empty($_SESSION['csrf_obsequio'])) {
+    $_SESSION['csrf_obsequio'] = bin2hex(random_bytes(32));
+}
+$avisoObsequio = $_SESSION['notificacion_obsequio'] ?? '';
+unset($_SESSION['notificacion_obsequio']);
 ?>
 
 <?php include("header.php"); ?>
@@ -105,31 +113,35 @@ else:
 
 <h2 class="total">Total: $<?= number_format($total, 0, ',', '.') ?></h2>
 
-<?php if (!empty($_SESSION['carrito'])): ?>
-<section class="pasarela-pago" aria-labelledby="titulo-pago">
-    <div class="pago-encabezado">
-        <div>
-            <h2 id="titulo-pago">Pago seguro</h2>
-        </div>
-    </div>
-    <div class="pago-metodo" aria-label="Método de pago seleccionado">
-        <span class="pago-icono-tarjeta" aria-hidden="true">▰</span>
-        <span><strong>Tarjeta bancaria</strong><small>Procesada por Stripe Checkout</small></span>
-        <span class="pago-seleccionado" aria-label="Seleccionado">✓</span>
-    </div>
-    <div class="pago-total">
-        <span>Total a pagar</span>
-        <strong>$<?= number_format($total, 0, ',', '.') ?><small> COP</small></strong>
-    </div>
-    <?php if ($solicitudDescuentoActiva && $total > 50000): ?>
-        <p class="canje-puntos-aviso canje-puntos-activo">Tu solicitud de descuento está activa. Se aplicará automáticamente el 30% a este pedido.</p>
-    <?php elseif ($solicitudDescuentoActiva): ?>
-        <p class="canje-puntos-aviso">Tu solicitud de descuento sigue activa; se aplicará cuando el total supere $50.000 COP.</p>
-    <?php elseif ($puntosDisponibles >= 7): ?>
-        <p class="canje-puntos-aviso"><a href="beneficios_cliente.php">Tienes <?= (int) $puntosDisponibles ?> puntos. Solicita el descuento del 30% desde Mis beneficios.</a></p>
+<section class="recompensas-carrito" style="background:#fbf7f3;border:1px solid #d7b8ad;border-radius:10px;margin:24px auto;max-width:900px;padding:22px;">
+    <h2 style="color:#481b18;margin-top:0;">Puntos y obsequios</h2>
+    <?php if ($avisoObsequio !== ''): ?><p role="status"><?= htmlspecialchars($avisoObsequio) ?></p><?php endif; ?>
+    <p>Tienes <strong><?= (int) $saldoPuntos['puntos'] ?></strong> puntos disponibles. Cada $50.000 COP acumulados en compras confirmadas suman 1 punto.</p>
+    <p>Te faltan $<?= number_format(max(0, 50000 - (int) $saldoPuntos['puntos_resto']), 0, ',', '.') ?> para tu siguiente punto.</p>
+    <?php if ((int) $saldoPuntos['puntos'] > 0): ?>
+        <form action="reclamar_obsequio.php" method="POST" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end;">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf_obsequio']) ?>">
+            <label style="display:grid;gap:6px;flex:1;min-width:220px;">Elige el producto de obsequio
+                <select name="producto_id" required style="padding:10px;border:1px solid #cdbfb3;border-radius:6px;">
+                    <option value="">Selecciona producto</option>
+                    <?php if ($puntosDisponibles): while ($productoObsequio = $puntosDisponibles->fetch_assoc()): ?>
+                        <option value="<?= (int) $productoObsequio['id'] ?>"><?= htmlspecialchars($productoObsequio['nombre']) ?> (valor $<?= number_format((int) $productoObsequio['precio'], 0, ',', '.') ?>)</option>
+                    <?php endwhile; endif; ?>
+                </select>
+            </label>
+            <button type="submit" class="btn-pagar" style="background:#481b18;border:0;border-radius:6px;color:#fff;cursor:pointer;padding:11px 16px;">Reclamar con 1 punto</button>
+        </form>
+    <?php else: ?>
+        <p>Cuando acumules un punto, podrás elegir aquí un producto disponible como obsequio.</p>
     <?php endif; ?>
+</section>
+
+<?php if (!empty($_SESSION['carrito'])): ?>
+<div class="pasarela-pago">
+    <h2>Pagar con Stripe</h2>
+    <p>Completa tu compra en la página segura de Stripe.</p>
     <form action="pagar.php" method="POST" id="form-pago">
-        <button type="submit" class="btn-pagar" <?= $carritoValido ? '' : 'disabled' ?>>Realizar pago</button>
+        <button type="submit" class="btn-pagar">Continuar con Stripe</button>
     </form>
 </section>
 <?php endif; ?>

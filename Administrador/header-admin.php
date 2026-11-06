@@ -95,20 +95,9 @@ if (isset($conexion)) {
         position: relative;
     }
 
-    .header-admin .menu a,
-    .header-admin .menu a[href*="usuarios.php"],
-    .header-admin .menu a[href*="productos.php"],
-    .header-admin .menu a[href*="mensajes.php"],
-    .header-admin .menu a[href*="ventas.php"],
-    .header-admin .menu a[href*="reportes.php"] {
-        color: #fffaf6;
-        text-shadow: 0 1px 2px rgba(54, 28, 35, .24);
-    }
-
     .header-admin .menu a:hover {
-        background: rgba(255, 255, 255, .2);
+        background: rgba(255, 255, 255, .18);
         color: #fff;
-        transform: translateY(-1px);
     }
 
     .menu-icon {
@@ -281,8 +270,7 @@ if (isset($conexion)) {
         <nav class="menu" aria-label="Navegación del administrador">
             <a href="index.php" title="Ir al inicio">Inicio</a>
             <a href="usuarios.php" title="Gestionar usuarios">Usuarios</a>
-            <a href="productos.php" title="Gestionar productos">Productos</a>
-            <a href="producto-destacado.php" title="Administrar producto destacado">Destacado</a>
+            <a href="productos.php" title="Gestionar productos">Catálogo</a>
             <a href="mensajes.php" title="Ver mensajes de contacto" style="position: relative;">
                 Mensajes
                 <?php if ($no_leidos_mensajes > 0): ?>
@@ -291,7 +279,8 @@ if (isset($conexion)) {
             </a>
             <a href="ventas.php" title="Ver ventas">Ventas</a>
             <a href="reportes.php" title="Ver reportes">Reportes</a>
-            <a href="logout.php" title="Cerrar sesión">Cerrar</a>
+            <a href="canjes.php" title="Administrar canjes de puntos">Canjes</a>
+            <a href="logout.php" title="Cerrar sesión">Cerrar sesión</a>
         </nav>
 
         <div class="perfil-menu">
@@ -299,12 +288,11 @@ if (isset($conexion)) {
                 <?php if (!empty($_SESSION['foto_perfil'])): ?>
                     <img src="../<?= htmlspecialchars($_SESSION['foto_perfil']) ?>" alt="Foto de perfil">
                 <?php else: ?>
-                    <span class="avatar-generico" aria-hidden="true">A</span>
+                    <span class="avatar-generico" aria-hidden="true">AB</span>
                 <?php endif; ?>
             </button>
             <div class="perfil-submenu">
                 <strong><?= htmlspecialchars($_SESSION['usuario'] ?? $_SESSION['nombre'] ?? 'Administrador') ?></strong>
-                <a href="../perfil.php">Seguridad de la cuenta</a>
                 <a href="logout.php">Cerrar sesión</a>
             </div>
         </div>
