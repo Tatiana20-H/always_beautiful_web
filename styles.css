@@ -2109,7 +2109,7 @@ body,
     align-items: center;
     display: grid;
     gap: 32px;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 0 auto;
     max-width: 1280px;
     padding: 30px 20px 24px;
@@ -2121,17 +2121,20 @@ body,
     display: grid;
     gap: 14px;
     justify-items: start;
+    min-width: 0;
     min-height: 100%;
 }
 
 .pie-contacto {
     display: grid;
     gap: 14px;
+    min-width: 0;
 }
 
 .pie-lado-derecho {
     justify-self: end;
     max-width: 480px;
+    min-width: 0;
     width: 100%;
 }
 
@@ -2252,6 +2255,7 @@ body,
     background: #202427;
     display: flex;
     font-size: .98rem;
+    flex-wrap: wrap;
     gap: 24px;
     justify-content: space-between;
     border-top: 1px solid rgba(255, 248, 242, .12);
@@ -2260,8 +2264,11 @@ body,
 }
 
 .pie-derechos {
+    flex: 1 1 220px;
     font-size: inherit;
     line-height: 1.5;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .pie-creditos {
@@ -2271,7 +2278,8 @@ body,
     line-height: 1.4;
     max-width: 100%;
     text-align: left;
-    width: max-content;
+    min-width: 0;
+    width: auto;
 }
 
 .pie-creditos-titulo {
@@ -2282,9 +2290,11 @@ body,
 .pie-creditos-nombres {
     align-items: center;
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     justify-content: flex-start;
-    white-space: nowrap;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 @media (max-width: 700px) {
@@ -3031,13 +3041,12 @@ button:hover,
 }
 
 .carrito-container {
-    width: 60%;
-    margin: 40px auto;
-    padding: 62px 30px 30px;
+    box-sizing: border-box;
+    margin: 24px auto;
+    max-width: 900px;
+    padding: 68px clamp(16px, 3vw, 30px) 24px;
     position: relative;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: calc(100% - 32px);
 }
 
 .contenedor-productos .card,
@@ -4316,14 +4325,30 @@ textarea {
     color: var(--ab-carbon);
 }
 
-.puntos-carrito { align-items: center; background: #27623a; border: 2px solid #fff; border-radius: 999px; box-shadow: 0 3px 10px rgba(35, 65, 42, .2); color: #fff; display: inline-flex; font-size: 13px; font-weight: 700; gap: 6px; min-height: 34px; padding: 0 14px; position: absolute; right: 18px; top: 14px; }
-.puntos-carrito span { color: #ffe28a; }
+.puntos-carrito { align-items: center; background: #edf4ed; border: 1px solid #b8cfb9; border-radius: 999px; color: #315b3c; display: inline-flex; font-size: 13px; font-weight: 700; gap: 7px; min-height: 36px; padding: 0 14px; position: absolute; right: 18px; top: 14px; }
+.puntos-carrito span { color: #a97931; }
 
-.carrito-container .item {
+.carrito-container .carrito-linea {
+    align-items: center;
     background: #fffaf5;
     border: 1px solid var(--ab-beige);
+    border-radius: 9px;
     color: var(--ab-carbon);
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 96px minmax(0, 1fr);
+    margin: 12px 0;
+    min-width: 0;
+    padding: 16px;
 }
+
+.carrito-linea .img-carrito { background: #f2e7df; height: 96px; object-fit: contain; width: 96px; }
+.carrito-info { min-width: 0; }
+.carrito-info h3 { margin: 0 0 10px; overflow-wrap: anywhere; }
+.carrito-info .cantidad { align-items: center; gap: 10px; }
+.carrito-info .btn-cantidad { align-items: center; border-radius: 5px; display: inline-flex; height: 32px; justify-content: center; min-width: 34px; padding: 0; text-decoration: none; }
+.carrito-info .precio { font-size: 17px; font-weight: 700; margin: 10px 0 6px; }
+.carrito-info .eliminar { display: inline-block; font-size: 13px; margin-top: 6px; }
 
 .carrito-container .info h3,
 .titulo-carrito,
@@ -4351,6 +4376,44 @@ textarea {
 .carrito-container .precio,
 .carrito-container .vacio {
     color: var(--ab-carbon);
+}
+
+.recompensas-carrito {
+    background: #fbf7f3;
+    border: 1px solid #e1cfc2;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin: 22px auto;
+    max-width: 900px;
+    padding: clamp(18px, 3vw, 26px);
+    width: calc(100% - 32px);
+}
+.recompensas-encabezado { align-items: center; border-bottom: 1px solid #eadbd0; display: flex; gap: 16px; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; }
+.recompensas-etiqueta { color: #8c644d; font-size: 11px; font-weight: 700; margin: 0 0 4px; }
+.recompensas-encabezado h2 { font-size: 21px; margin: 0; }
+.recompensas-saldo { align-items: baseline; background: #edf4ed; border: 1px solid #c5d8c6; border-radius: 6px; color: #315b3c; display: inline-flex; flex: 0 0 auto; gap: 5px; padding: 8px 11px; }
+.recompensas-saldo strong { font-size: 20px; }
+.recompensas-regla, .recompensas-progreso { line-height: 1.5; margin: 8px 0; }
+.recompensas-progreso strong { color: #743629; }
+.recompensas-form { align-items: end; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.recompensas-form label { display: grid; flex: 1 1 240px; font-size: 13px; font-weight: 700; gap: 6px; min-width: 0; }
+.recompensas-form select { background: #fff; border: 1px solid #cdbfb3; border-radius: 6px; box-sizing: border-box; min-height: 44px; padding: 10px; width: 100%; }
+.btn-reclamar-obsequio { background: #481b18; border: 0; border-radius: 6px; color: #fff; cursor: pointer; font-weight: 700; min-height: 44px; padding: 10px 16px; }
+.btn-reclamar-obsequio:hover { background: #743629; }
+.btn-reclamar-obsequio:disabled { cursor: not-allowed; opacity: .6; }
+.pagina-carrito > .total { color: var(--ab-wine); margin: 28px 16px; }
+.pagina-carrito .pasarela-pago { box-sizing: border-box; margin: 24px auto 40px; width: calc(100% - 32px); }
+.pagina-carrito .pasarela-pago > p { line-height: 1.5; }
+
+@media (max-width: 560px) {
+    .carrito-container { margin-top: 18px; padding: 64px 12px 14px; }
+    .puntos-carrito { left: 12px; right: auto; }
+    .carrito-container .carrito-linea { gap: 12px; grid-template-columns: 72px minmax(0, 1fr); padding: 12px; }
+    .carrito-linea .img-carrito { height: 72px; width: 72px; }
+    .recompensas-encabezado { align-items: flex-start; }
+    .recompensas-encabezado h2 { font-size: 19px; }
+    .recompensas-saldo { font-size: 12px; }
+    .recompensas-form .btn-reclamar-obsequio { width: 100%; }
 }
 
 /* FORMULARIO DE CONTACTO */

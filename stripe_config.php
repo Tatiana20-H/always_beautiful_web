@@ -1,14 +1,56 @@
 <?php
 
+function stripeConfigValue(string $name, string $default = ''): string
+{
+    $value = getenv($name);
+    if ($value !== false && $value !== '') {
+        return trim((string) $value);
+    }
+
+    static $localConfig = null;
+    if ($localConfig === null) {
+        $path = __DIR__ . '/.env';
+        $localConfig = is_readable($path) ? parse_ini_file($path, false, INI_SCANNER_RAW) : [];
+        if (!is_array($localConfig)) {
+            $localConfig = [];
+        }
+    }
+
+    return trim((string) ($localConfig[$name] ?? $default));
+}
+
 function stripeSecretKey(): string
 {
-    return trim((string) getenv('STRIPE_SECRET_KEY'));
+    return stripeConfigValue('STRIPE_SECRET_KEY');
+}
+
+if (!defined('STRIPE_SECRET_KEY')) {
+    define('STRIPE_SECRET_KEY', stripeSecretKey());
+}
+if (!defined('STRIPE_WEBHOOK_SECRET')) {
+    define('STRIPE_WEBHOOK_SECRET', stripeConfigValue('STRIPE_WEBHOOK_SECRET'));
+}
+
+function stripeModoPruebaDisponible(): bool
+{
+    return (bool) preg_match('/^(sk_test_|rk_test_)[A-Za-z0-9]+$/', STRIPE_SECRET_KEY)
+        && function_exists('curl_init');
 }
 
 function stripeBaseUrl(): string
 {
-    $baseUrl = rtrim(trim((string) getenv('APP_BASE_URL')), '/');
+    $baseUrl = rtrim(stripeConfigValue('APP_BASE_URL'), '/');
     if ($baseUrl !== '') {
+        $configured = parse_url($baseUrl);
+        $requestHost = trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if (is_array($configured) && in_array(strtolower((string) ($configured['host'] ?? '')), ['localhost', '127.0.0.1'], true) &&
+            preg_match('/^(localhost|127\.0\.0\.1):\d+$/i', $requestHost)) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+                ? 'https'
+                : strtolower((string) ($configured['scheme'] ?? 'http'));
+            return $scheme . '://' . $requestHost;
+        }
         return $baseUrl;
     }
 

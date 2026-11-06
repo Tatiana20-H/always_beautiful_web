@@ -54,7 +54,7 @@ if (!stripeModoPruebaDisponible()) {
     mostrarInicioPagoError($mensajeConfiguracion, 503);
 }
 
-$appUrl = trim((string) (getenv('APP_URL') ?: ''));
+$appUrl = stripeBaseUrl();
 $urlAplicacion = parse_url($appUrl);
 if (!is_array($urlAplicacion) || !in_array(strtolower((string) ($urlAplicacion['scheme'] ?? '')), ['http', 'https'], true) ||
     empty($urlAplicacion['host']) || isset($urlAplicacion['user']) || isset($urlAplicacion['pass'])) {
