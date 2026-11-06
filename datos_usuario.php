@@ -69,7 +69,7 @@ function enviarNotificacion($destinatario, $asunto, $mensaje) {
 
     $host = trim((string) $obtenerConfiguracion('SMTP_HOST', 'smtp.gmail.com'));
     $usuario = trim((string) $obtenerConfiguracion('SMTP_USER', $obtenerConfiguracion('ADMIN_EMAIL', 'tachiandrade79@gmail.com')));
-    $contrasena = (string) $obtenerConfiguracion('SMTP_PASSWORD');
+    $contrasena = preg_replace('/\s+/', '', (string) $obtenerConfiguracion('SMTP_PASSWORD'));
     $remitente = trim((string) $obtenerConfiguracion('SMTP_FROM', $usuario));
     $puerto = (int) $obtenerConfiguracion('SMTP_PORT', 587);
     $cifrado = strtolower(trim((string) $obtenerConfiguracion('SMTP_ENCRYPTION', 'tls')));

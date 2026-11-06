@@ -6,6 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     unset($_SESSION['correo_recuperacion']);
 }
 $mensaje = '';
+$errorEnvioCorreo = false;
 $mostrarCodigo = !empty($_SESSION['recuperacion_correo']);
 $correoSesion = $_SESSION['recuperacion_correo'] ?? '';
 
@@ -13,8 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $correo = strtolower(trim($_POST['correo'] ?? ''));
     $codigo = trim($_POST['codigo'] ?? '');
     $nuevaPassword = $_POST['nueva_password'] ?? '';
+    $reenviarCodigo = isset($_POST['reenviar_codigo']);
 
-    if ($codigo !== '') {
+    if ($reenviarCodigo) {
+        $correo = $correoSesion;
+    }
+
+    if ($codigo !== '' && !$reenviarCodigo) {
         $correo = $correoSesion;
         if ($correo === '' || !preg_match('/^\d{6}$/', $codigo) || !preg_match('/^(?=.*\p{L})(?=.*\d)(?=.*[^\p{L}\d\s]).{8,16}$/u', $nuevaPassword)) {
             $mensaje = 'Código o contraseña no válidos. La contraseña debe tener entre 8 y 16 caracteres e incluir letras, números y símbolos.';
@@ -30,11 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hash = password_hash($nuevaPassword, PASSWORD_DEFAULT);
                 $stmt = $conexion->prepare('UPDATE usuarios SET contrasena = ?, correo_verificado = 1, codigo_recuperacion = NULL, codigo_expira = NULL, intentos_recuperacion = 0 WHERE id = ?');
                 $stmt->bind_param('si', $hash, $usuario['id']);
-                $stmt->execute();
+                $actualizado = $stmt->execute();
                 $stmt->close();
-                unset($_SESSION['recuperacion_correo']);
-                $mensaje = 'Contraseña actualizada. Ya puedes iniciar sesión.';
-                $mostrarCodigo = false;
+                if ($actualizado) {
+                    unset($_SESSION['recuperacion_correo']);
+                    $mensaje = 'Contraseña actualizada. Ya puedes iniciar sesión.';
+                    $mostrarCodigo = false;
+                } else {
+                    error_log('No fue posible actualizar la contraseña durante la recuperación.');
+                    $mensaje = 'No fue posible actualizar la contraseña. Inténtalo nuevamente.';
+                    $mostrarCodigo = true;
+                }
             } else {
                 if ($usuario) {
                     $stmt = $conexion->prepare('UPDATE usuarios SET intentos_recuperacion = intentos_recuperacion + 1 WHERE id = ?');
@@ -43,13 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->close();
                 }
                 $mensaje = 'Código incorrecto, vencido o se alcanzó el límite de intentos. Solicita otro código.';
-                $mostrarCodigo = false;
-                unset($_SESSION['recuperacion_correo']);
+                $mostrarCodigo = true;
             }
         }
-    } elseif (filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-        $_SESSION['recuperacion_correo'] = $correo;
-        $correoSesion = $correo;
+    } elseif (($reenviarCodigo && $correo !== '') || filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        if (!$reenviarCodigo) {
+            $_SESSION['recuperacion_correo'] = $correo;
+            $correoSesion = $correo;
+        }
         $mostrarCodigo = true;
         $stmt = $conexion->prepare('SELECT id FROM usuarios WHERE correo = ?');
         $stmt->bind_param('s', $correo);
@@ -63,12 +76,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hashCodigo = password_hash($codigo, PASSWORD_DEFAULT);
             $stmt = $conexion->prepare('UPDATE usuarios SET codigo_recuperacion = ?, codigo_expira = DATE_ADD(NOW(), INTERVAL 10 MINUTE), intentos_recuperacion = 0 WHERE id = ?');
             $stmt->bind_param('si', $hashCodigo, $usuario['id']);
-            $stmt->execute();
+            $guardado = $stmt->execute();
             $stmt->close();
-            if (enviarNotificacion($correo, 'Código de recuperación - Always Beautiful', "Tu código de recuperación es: {$codigo}\nVence en 10 minutos. Si no solicitaste este cambio, ignora el mensaje.")) {
-                $mensaje = 'Si el correo está registrado, recibirás un código de recuperación.';
-            } else {
-                $mensaje = 'Si el correo está registrado, recibirás un código de recuperación.';
+            if ($guardado && !enviarNotificacion($correo, 'Código de recuperación - Always Beautiful', "Tu código de recuperación es: {$codigo}\nVence en 10 minutos. Si no solicitaste este cambio, ignora el mensaje.")) {
+                $errorEnvioCorreo = true;
+                $stmt = $conexion->prepare('UPDATE usuarios SET codigo_recuperacion = NULL, codigo_expira = NULL WHERE id = ?');
+                $stmt->bind_param('i', $usuario['id']);
+                $stmt->execute();
+                $stmt->close();
             }
         }
     }
@@ -80,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="form-wrapper recuperacion">
     <h2>Recuperar contraseña</h2>
-    <?php if ($mensaje): ?><p class="mensaje-form"><?= htmlspecialchars($mensaje) ?></p><?php endif; ?>
+    <?php if ($mensaje): ?><p class="mensaje-form" role="status"><?= htmlspecialchars($mensaje) ?></p><?php endif; ?>
+    <?php if ($errorEnvioCorreo): ?><p class="mensaje-form" role="alert">No se pudo enviar el código. Revisa la configuración SMTP de Gmail en el servidor e inténtalo nuevamente.</p><?php endif; ?>
     <form method="POST">
         <?php if (!$mostrarCodigo): ?>
             <input type="email" name="correo" placeholder="Correo registrado" required autocomplete="email">
@@ -91,6 +107,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         <button type="submit"><?= $mostrarCodigo ? 'Cambiar contraseña' : 'Enviar código' ?></button>
     </form>
+    <?php if ($mostrarCodigo): ?>
+        <form method="POST">
+            <button type="submit" name="reenviar_codigo" value="1">Reenviar código</button>
+        </form>
+    <?php endif; ?>
     <p><a href="index.php">Volver al inicio</a></p>
 </div>
 <script>
