@@ -22,10 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reenviar_codigo']) &&
         $stmt->bind_param('ss', $hashNuevo, $correoPendiente);
         $actualizado = $stmt->execute();
         $stmt->close();
-        if ($actualizado && enviarNotificacion($correoPendiente, 'Verifica tu correo - Always Beautiful', "Tu nuevo código de verificación es: {$codigoNuevo}\nVence en 10 minutos.")) {
+        if (!$actualizado) {
+            $avisoRegistro = 'No se pudo actualizar el código en la base de datos. Inténtalo nuevamente.';
+        } elseif (enviarNotificacion($correoPendiente, 'Verifica tu correo - Always Beautiful', "Tu nuevo código de verificación es: {$codigoNuevo}\nVence en 10 minutos.")) {
             $avisoRegistro = 'Enviamos un nuevo código a tu correo.';
         } else {
-            $avisoRegistro = 'No se pudo enviar el correo. Configura SMTP_PASSWORD con una contraseña de aplicación de Google y vuelve a intentarlo.';
+            $avisoRegistro = 'No se pudo enviar el correo. ' . mensajeErrorNotificacion() . ' Corrige la configuración e inténtalo de nuevo.';
         }
     } else {
         $avisoRegistro = 'No encontramos un registro pendiente para ese correo. Vuelve a completar el formulario.';

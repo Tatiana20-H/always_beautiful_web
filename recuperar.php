@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="form-wrapper recuperacion">
     <h2>Recuperar contraseña</h2>
     <?php if ($mensaje): ?><p class="mensaje-form" role="status"><?= htmlspecialchars($mensaje) ?></p><?php endif; ?>
-    <?php if ($errorEnvioCorreo): ?><p class="mensaje-form" role="alert">No se pudo enviar el código. Revisa la configuración SMTP de Gmail en el servidor e inténtalo nuevamente.</p><?php endif; ?>
+    <?php if ($errorEnvioCorreo): ?><p class="mensaje-form" role="alert">No se pudo enviar el código. <?= htmlspecialchars(mensajeErrorNotificacion(), ENT_QUOTES, 'UTF-8') ?> Corrige la configuración e inténtalo nuevamente.</p><?php endif; ?>
     <form method="POST">
         <?php if (!$mostrarCodigo): ?>
             <input type="email" name="correo" placeholder="Correo registrado" required autocomplete="email">

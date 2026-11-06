@@ -44,8 +44,10 @@ function asegurarCamposUsuario($conexion) {
 }
 
 function enviarNotificacion($destinatario, $asunto, $mensaje) {
+    $GLOBALS['error_notificacion'] = '';
     $autoload = __DIR__ . '/vendor/autoload.php';
     if (!is_file($autoload)) {
+        $GLOBALS['error_notificacion'] = 'dependencia';
         error_log('PHPMailer no está instalado; reconstruye la imagen Docker.');
         return false;
     }
@@ -75,6 +77,7 @@ function enviarNotificacion($destinatario, $asunto, $mensaje) {
     $cifrado = strtolower(trim((string) $obtenerConfiguracion('SMTP_ENCRYPTION', 'tls')));
 
     if ($usuario === '' || $contrasena === '' || !filter_var($destinatario, FILTER_VALIDATE_EMAIL) || !filter_var($remitente, FILTER_VALIDATE_EMAIL)) {
+        $GLOBALS['error_notificacion'] = 'configuracion';
         error_log('Correo SMTP no configurado: define SMTP_USER/SMTP_FROM y una contraseña de aplicación en SMTP_PASSWORD.');
         return false;
     }
@@ -99,9 +102,21 @@ function enviarNotificacion($destinatario, $asunto, $mensaje) {
         $correo->send();
         return true;
     } catch (Throwable $error) {
+        $GLOBALS['error_notificacion'] = stripos($error->getMessage(), 'Could not authenticate') !== false
+            ? 'autenticacion'
+            : 'smtp';
         error_log('No se pudo enviar correo SMTP: ' . $error->getMessage());
         return false;
     }
+}
+
+function mensajeErrorNotificacion() {
+    return match ($GLOBALS['error_notificacion'] ?? '') {
+        'configuracion' => 'Falta configurar la cuenta remitente y su contraseña de aplicación en el servidor.',
+        'autenticacion' => 'Google rechazó la autenticación. Usa una contraseña de aplicación generada en la misma cuenta indicada en ADMIN_EMAIL; si definiste SMTP_USER o SMTP_FROM, deben ser esa misma cuenta.',
+        'dependencia' => 'El servicio de correo no está instalado correctamente en el servidor.',
+        default => 'No se pudo conectar con Gmail. Revisa la conexión y la configuración SMTP del servidor.',
+    };
 }
 
 function guardarDatosUsuario($conexion) {

@@ -83,7 +83,7 @@ if (!$guardado) {
 }
 
 if (!enviarNotificacion($correo, 'Verifica tu correo - Always Beautiful', "Tu código de verificación es: {$codigo}\nVence en 10 minutos. Si no solicitaste esta cuenta, ignora este mensaje.")) {
-    $_SESSION['registro_mensaje'] = 'Guardamos tus datos, pero Gmail no pudo enviar el código. Configura una contraseña de aplicación en SMTP_PASSWORD y luego selecciona “Reenviar código”.';
+    $_SESSION['registro_mensaje'] = 'Guardamos tus datos, pero ' . mensajeErrorNotificacion() . ' Cuando lo corrijas, selecciona “Reenviar código”.';
 } else {
     $_SESSION['registro_mensaje'] = 'Enviamos un código de seis dígitos a tu correo. Vence en 10 minutos.';
 }
