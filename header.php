@@ -67,7 +67,6 @@ if ($esUsuarioAutenticado && isset($GLOBALS['conexion'])) {
                     <a href="Accesorios.php">Accesorios</a>
                     <a href="Cabello.php">Cuidado del cabello</a>
                     <a href="piel.php">Cuidado de la piel</a>
-                                    <a href="perfumes.php">Perfumes</a>
                 </div>
             </div>
             <div class="item dropdown modulo-nosotros">

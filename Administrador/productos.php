@@ -661,7 +661,7 @@ include("header-admin.php");
     <?php
     $total_promos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM promociones"))['total'];
     $total_combos = mysqli_fetch_assoc(mysqli_query($conexion, "SELECT COUNT(*) as total FROM combos"))['total'];
-    $categoriasProducto = ['Piel' => 'Cuidado de piel', 'Cabello' => 'Cabello', 'Maquillaje' => 'Maquillaje', 'Accesorios' => 'Accesorios', 'Perfumes' => 'Perfumes'];
+    $categoriasProducto = ['Piel' => 'Cuidado de piel', 'Cabello' => 'Cabello', 'Maquillaje' => 'Maquillaje', 'Accesorios' => 'Accesorios'];
     $conteosCategoria = array_fill_keys(array_keys($categoriasProducto), 0);
     $resultadoConteos = mysqli_query($conexion, "SELECT categoria, COUNT(*) AS total FROM productos GROUP BY categoria");
     if ($resultadoConteos) {
@@ -708,7 +708,6 @@ include("header-admin.php");
                     <option value="Cabello">Cabello</option>
                     <option value="Maquillaje">Maquillaje</option>
                     <option value="Accesorios">Accesorios</option>
-                    <option value="Perfumes">Perfumes</option>
                 </select>
                 <input type="file" name="imagen" id="producto-imagen" accept="image/*">
                 <input type="hidden" name="imagen_galeria_ruta" id="producto-imagen-ruta">
@@ -764,7 +763,6 @@ include("header-admin.php");
                     <option value="Cabello">Cabello</option>
                     <option value="Maquillaje">Maquillaje</option>
                     <option value="Accesorios">Accesorios</option>
-                    <option value="Perfumes">Perfumes</option>
                 </select>
                 <input type="text" name="oferta_precio" id="oferta-precio" placeholder="Precio en COP (ej. 140.000)" inputmode="numeric" pattern="[0-9.,]+" required>
                 <input type="number" name="oferta_descuento" id="oferta-descuento" placeholder="Descuento (%)" min="0" max="100" step="0.01" value="0" required>
@@ -818,7 +816,6 @@ include("header-admin.php");
                 'Piel' => 'Cuidado de piel',
                 'Cabello' => 'Cabello',
                 'Accesorios' => 'Accesorios',
-                'Perfumes' => 'Perfumes',
             ];
             $imagenesProductosPorCategoria = array_fill_keys(array_keys($categoriasImagenesOferta), []);
             $imagenesProductosExistentes = mysqli_query($conexion, "SELECT nombre, categoria, imagen FROM productos WHERE activo = 1 AND imagen IS NOT NULL AND imagen <> '' ORDER BY nombre ASC");
@@ -932,7 +929,7 @@ include("header-admin.php");
         $stock = (int) $_POST['stock'];
         $descripcion = trim($_POST['descripcion'] ?? '');
         $categoria = $_POST['categoria'] ?? '';
-        $categoriasPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios', 'Perfumes'];
+        $categoriasPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios'];
         $rutaImagen = trim($_POST['imagen_galeria_ruta'] ?? '');
         if ($rutaImagen === '') {
             $rutaImagen = subirImagenProducto($_FILES['imagen'] ?? null, __DIR__ . '/../IMG/productos');
@@ -1036,7 +1033,7 @@ include("header-admin.php");
             $rutaImagen = subirImagenProducto($_FILES['oferta_imagen'] ?? null, $carpetaOferta);
         }
 
-        $categoriasOfertaPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios', 'Perfumes'];
+        $categoriasOfertaPermitidas = ['Piel', 'Cabello', 'Maquillaje', 'Accesorios'];
         $categoriaValida = $tipoOferta === 'combo' || in_array($categoria, $categoriasOfertaPermitidas, true);
         $rutaImagenReal = $rutaImagen !== '' ? realpath(dirname(__DIR__) . '/' . $rutaImagen) : false;
         $directorioImagenes = realpath(dirname(__DIR__) . '/IMG');
