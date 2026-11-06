@@ -55,16 +55,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['codigo_verificacion']
         $hash = $pendiente['contrasena'];
         $fechaNacimiento = $pendiente['fecha_nacimiento'];
         $genero = $pendiente['genero'];
-        $stmt = $conexion->prepare("INSERT INTO usuarios (nombre, correo, contrasena, rol, fecha_nacimiento, genero, correo_verificado, correo_padre, padre_verificado) VALUES (?, ?, ?, 'usuario', ?, ?, 1, NULL, 0)");
-        $stmt->bind_param('sssss', $nombre, $correo, $hash, $fechaNacimiento, $genero);
-        $creado = $stmt->execute();
-        $usuarioId = $conexion->insert_id;
-        $stmt->close();
+        $creado = false;
+        $usuarioId = 0;
+        if ($conexion->begin_transaction()) {
+            $stmt = $conexion->prepare("INSERT INTO usuarios (nombre, correo, contrasena, rol, fecha_nacimiento, genero, correo_verificado, correo_padre, padre_verificado) VALUES (?, ?, ?, 'usuario', ?, ?, 1, NULL, 0)");
+            if ($stmt) {
+                $stmt->bind_param('sssss', $nombre, $correo, $hash, $fechaNacimiento, $genero);
+                $creado = $stmt->execute();
+                $errorCreacion = $stmt->error;
+                if ($creado) {
+                    $usuarioId = (int) $conexion->insert_id;
+                }
+                $stmt->close();
+                if ($creado) {
+                    $stmt = $conexion->prepare('DELETE FROM registros_pendientes WHERE correo = ?');
+                    if ($stmt) {
+                        $stmt->bind_param('s', $correo);
+                        $eliminadoPendiente = $stmt->execute() && $stmt->affected_rows === 1;
+                        $stmt->close();
+                        $creado = $eliminadoPendiente && $conexion->commit();
+                    } else {
+                        $creado = false;
+                    }
+                }
+            } else {
+                $errorCreacion = $conexion->error;
+                $creado = false;
+            }
+            if (!$creado) {
+                $conexion->rollback();
+                error_log('No fue posible confirmar el registro del usuario: ' . ($errorCreacion ?? $conexion->error));
+            }
+        }
         if ($creado) {
-            $stmt = $conexion->prepare('DELETE FROM registros_pendientes WHERE correo = ?');
-            $stmt->bind_param('s', $correo);
-            $stmt->execute();
-            $stmt->close();
             unset($_SESSION['registro_correo'], $_SESSION['registro_paso']);
             session_regenerate_id(true);
             $_SESSION['usuario_id'] = (int) $usuarioId;
